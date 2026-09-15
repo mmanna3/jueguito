@@ -1,0 +1,29 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/Town.gd" id="1_script"]
+[ext_resource type="TileSet" path="res://assets/tileset/town_tileset.tres" id="2_tileset"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/NPC.tscn" id="4_npc"]
+
+[node name="Town" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="NPCs" type="Node2D" parent="."]
+
+[node name="NPC1" parent="NPCs" instance=ExtResource("4_npc")]
+position = Vector2(40, 56)
+atlas_coords = Vector2i(0, 6)
+
+[node name="NPC2" parent="NPCs" instance=ExtResource("4_npc")]
+position = Vector2(200, 56)
+atlas_coords = Vector2i(1, 6)
+
+[node name="NPC3" parent="NPCs" instance=ExtResource("4_npc")]
+position = Vector2(120, 120)
+atlas_coords = Vector2i(1, 8)
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(120, 88)
