@@ -12,6 +12,7 @@ config_version=5
 
 Dialogue="*res://scenes/DialogueBox.tscn"
 GameState="*res://scripts/GameState.gd"
+Transition="*res://scenes/Transition.tscn"
 
 [application]
 

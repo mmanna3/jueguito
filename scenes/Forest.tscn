@@ -14,6 +14,9 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pond"]
 size = Vector2(48, 48)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_southexit"]
+size = Vector2(48, 32)
+
 [node name="Forest" type="Node2D"]
 script = ExtResource("1_script")
 
@@ -34,6 +37,15 @@ texture = ExtResource("7_pond_tex")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Pond"]
 shape = SubResource("RectangleShape2D_pond")
+
+[node name="SouthExit" type="Area2D" parent="."]
+position = Vector2(328, 464)
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SouthExit"]
+shape = SubResource("RectangleShape2D_southexit")
 
 [node name="NPCs" type="Node2D" parent="."]
 

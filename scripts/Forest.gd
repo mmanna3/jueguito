@@ -46,6 +46,9 @@ const STRANGER_POST_ATTACK_LINES := [
 	"Nunca había visto un poder semejante.",
 ]
 
+## Columnas del hueco que se abre en el bosque del sur, al centro del mapa.
+const SOUTH_GAP_COLUMNS := [19, 20, 21]
+
 ## "Ground" siempre tiene un terreno solido (pasto/camino/agua) debajo de todo.
 ## "Decoration" tiene los obstaculos (arboles, arbustos, rocas, orillas), que
 ## son siluetas con transparencia -- si se pintaran solos en una sola capa,
@@ -57,6 +60,7 @@ const STRANGER_POST_ATTACK_LINES := [
 @onready var stranger: StaticBody2D = $NPCs/Stranger
 @onready var pond: StaticBody2D = $Pond
 @onready var player: CharacterBody2D = $Player
+@onready var south_exit: Area2D = $SouthExit
 
 @onready var strangers: Array = [
 	stranger, $NPCs/Stranger2, $NPCs/Stranger3, $NPCs/Stranger4,
@@ -65,12 +69,14 @@ const STRANGER_POST_ATTACK_LINES := [
 var _talked_to_abuela := false
 var _water_event_played := false
 var _abuela_following := false
+var _leaving_south := false
 
 
 func _ready() -> void:
 	_build_map()
 	abuela.interact_requested.connect(_on_abuela_interact)
 	pond.interact_requested.connect(_on_pond_interact)
+	south_exit.body_entered.connect(_on_south_exit_entered)
 
 	if GameState.returning_from_battle_defeat:
 		GameState.returning_from_battle_defeat = false
@@ -213,12 +219,16 @@ func _on_abuela_interact() -> void:
 
 
 func _on_pond_interact() -> void:
+	# el manantial no reacciona a nada hasta que Ryan hable con la abuela.
+	if not _talked_to_abuela:
+		return
+
 	Dialogue.start_conversation([
 		{"speaker": "", "portrait": null, "text": WATER_FLAVOR_TEXT},
 	])
 	await Dialogue.dialogue_closed
 
-	if not _talked_to_abuela or _water_event_played:
+	if _water_event_played:
 		return
 
 	_water_event_played = true
@@ -300,6 +310,12 @@ func _play_post_battle_scene() -> void:
 	])
 	await Dialogue.dialogue_closed
 
+	# el ataque de la abuela abre un paso al sur: desaparecen esos arboles
+	# del borde, dejando un hueco por el que se puede salir del claro.
+	for x in SOUTH_GAP_COLUMNS:
+		decoration.erase_cell(Vector2i(x, MAP_H - 2))
+		decoration.erase_cell(Vector2i(x, MAP_H - 1))
+
 	player.movement_locked = false
 	_abuela_following = true
 	player.move_finished.connect(_on_player_moved_for_follow)
@@ -310,6 +326,20 @@ func _play_post_battle_scene() -> void:
 func _on_player_moved_for_follow(from_pos: Vector2, _to_pos: Vector2) -> void:
 	if _abuela_following:
 		abuela.walk_to(from_pos, 0.15)
+
+
+## El jugador cruzo el hueco que se abrio al sur: fundido a negro y
+## cambio al claro chico donde esta la nave.
+func _on_south_exit_entered(body: Node2D) -> void:
+	if _leaving_south or body != player:
+		return
+	_leaving_south = true
+
+	player.movement_locked = true
+	await Transition.fade_out()
+
+	GameState.entering_forest_south = true
+	get_tree().change_scene_to_file("res://scenes/ForestSouth.tscn")
 
 
 ## Llama la atencion del jugador: un "!" arriba de Ryan y un temblor corto

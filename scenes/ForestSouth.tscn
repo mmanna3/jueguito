@@ -1,0 +1,50 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/ForestSouth.gd" id="1_script"]
+[ext_resource type="TileSet" path="res://assets/tileset_forest/forest_tileset.tres" id="2_tileset"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/NPC.tscn" id="4_npc"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/abuela.png" id="5_abuela_tex"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/abuela_portrait.png" id="6_abuela_portrait"]
+[ext_resource type="Texture2D" path="res://assets/tileset_forest/ship.png" id="7_ship_tex"]
+[ext_resource type="Script" path="res://scripts/InteractableProp.gd" id="8_interactable"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ship"]
+size = Vector2(32, 32)
+
+[node name="ForestSouth" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="Decoration" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="Ship" type="StaticBody2D" parent="."]
+position = Vector2(168, 120)
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("8_interactable")
+
+[node name="Sprite2D" type="Sprite2D" parent="Ship"]
+texture = ExtResource("7_ship_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ship"]
+shape = SubResource("RectangleShape2D_ship")
+
+[node name="NPCs" type="Node2D" parent="."]
+
+[node name="AbuelaCatta" parent="NPCs" instance=ExtResource("4_npc")]
+position = Vector2(168, 24)
+custom_texture = ExtResource("5_abuela_tex")
+portrait = ExtResource("6_abuela_portrait")
+npc_name = "Abuela Catta"
+dialogue_lines = PackedStringArray("Andá, no perdamos tiempo.")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(168, 40)
+
+[node name="Camera2D" parent="Player" index="2"]
+limit_right = 320
+limit_bottom = 240

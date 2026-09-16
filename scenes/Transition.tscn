@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/Transition.gd" id="1_script"]
+
+[node name="Transition" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_script")
+
+[node name="Rect" type="ColorRect" parent="."]
+offset_right = 320.0
+offset_bottom = 180.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

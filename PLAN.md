@@ -733,3 +733,64 @@ Probado con Godot real: la escena post-batalla llega a buen término
 ese diálogo corto se cierra, y hablarle a la abuela en modo seguimiento
 devuelve exactamente "Rápido, Ryan, hacia el sur." — más una captura real
 del cartel con la cara del Extraño ya asustada.
+
+## Etapa 7: manantial con candado, y transición a un mapa nuevo (2026-09-16)
+
+### 1. El manantial no reacciona hasta hablar con la abuela
+
+`_on_pond_interact()` ahora corta al principio si `not _talked_to_abuela`
+— antes de eso, interactuar con el manantial no hace absolutamente nada
+(ni siquiera el texto de narración).
+
+### 2. Transición al Bosque Púrpura chico (la parte que más te interesaba)
+
+Cómo queda armado, paso a paso:
+
+1. **Se abre un hueco real en el mapa.** Justo después del diálogo corto
+   del Extraño/abuela tras el ataque, `Forest.gd` borra (`erase_cell`) los
+   tiles de bosque en 3 columnas al centro del borde sur (filas 28-29,
+   columnas 19-21) — no es cosmético, son celdas de `Decoration` que
+   realmente dejan de bloquear.
+2. **Un `Area2D` invisible ("SouthExit")** ocupa exactamente ese hueco. En
+   cuanto el `CharacterBody2D` del jugador la pisa, dispara
+   `_on_south_exit_entered` — con una bandera (`_leaving_south`) para que
+   no se dispare dos veces.
+3. **Fundido a negro real**, no un corte seco: se agregó un autoload nuevo,
+   `Transition` (`scenes/Transition.tscn` + `scripts/Transition.gd`), un
+   `CanvasLayer` con un `ColorRect` a pantalla completa que persiste entre
+   escenas (como `Dialogue`) y expone `fade_out()`/`fade_in()` como
+   corutinas `await`-eables. `Forest.gd` bloquea al jugador, espera el
+   fundido a negro, y recién ahí cambia de escena.
+4. **El estado que necesita sobrevivir el cambio de escena** (Godot
+   reinstancia todo de cero) viaja por `GameState.entering_forest_south`,
+   el mismo patrón que ya se usaba para volver de la batalla.
+5. **Escena nueva `ForestSouth.tscn`/`ForestSouth.gd`**: mapa de 20x15 (un
+   cuarto del área del bosque grande de 40x30), mismo tileset violeta,
+   completamente cerrado por bosque (sin más salidas por ahora). Ryan
+   aparece entrando por el norte con la abuela justo detrás; en su
+   `_ready()`, si `GameState.entering_forest_south` está prendido, bloquea
+   el movimiento, hace `Transition.fade_in()` (de negro a transparente), y
+   recién ahí lo libera. El seguimiento de la abuela se reconecta ahí
+   mismo (mismo mecanismo que en el bosque grande: `Player.move_finished`
+   → la abuela se desliza a la celda que Ryan dejó libre).
+6. **La nave**: objeto nuevo dibujado a mano (plato circular gris viejo,
+   cúpula de vidrio violeta, manchas de óxido, lucecitas ámbar — pensado
+   para leerse como tecnología vieja/ajena, no orgánico como el resto del
+   escenario), en el centro del mapa. Usa un script genérico nuevo,
+   `InteractableProp.gd` (StaticBody2D + señal `interact_requested` +
+   `interact_size` exportado), el mismo patrón que ya usaba el manantial
+   — se armó genérico a propósito para no repetir código con el próximo
+   objeto grande que haga falta.
+7. **El diálogo de la nave** es el que escribiste, palabra por palabra,
+   solo partido en más "renglones" en 2 lugares donde el texto original
+   era largo (ya aprendimos que eso puede desbordar el cartel) — el
+   contenido no cambió, solo la cantidad de Enters para leerlo. Termina
+   ahí, como pediste, sin disparar nada más.
+
+Probado con Godot real, la cadena completa: manantial mudo antes de hablar
+con la abuela → post-batalla abre el hueco de verdad (se verificó que esa
+celda queda sin tile) → parar al jugador arriba del `Area2D` dispara el
+fundido y el cambio de escena → `ForestSouth` carga con Ryan y la abuela
+en la posición esperada → hablarle a la nave reproduce las 10 líneas en
+el orden y con el hablante/retrato correctos. Más dos capturas reales: el
+clarito con la nave a lo lejos, y el cartel de diálogo ya abierto.
