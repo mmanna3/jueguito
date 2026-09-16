@@ -8,10 +8,14 @@
 
 config_version=5
 
+[autoload]
+
+Dialogue="*res://scenes/DialogueBox.tscn"
+
 [application]
 
 config/name="Jueguito"
-run/main_scene="res://scenes/Town.tscn"
+run/main_scene="res://scenes/Forest.tscn"
 
 [display]
 

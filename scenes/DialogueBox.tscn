@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/DialogueBox.gd" id="1_script"]
+
+[node name="DialogueBox" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+offset_right = 320.0
+offset_bottom = 180.0
+mouse_filter = 2
+visible = false
+
+[node name="Panel" type="Panel" parent="Root"]
+offset_left = 8.0
+offset_top = 100.0
+offset_right = 312.0
+offset_bottom = 172.0
+
+[node name="Portrait" type="TextureRect" parent="Root/Panel"]
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 54.0
+offset_bottom = 54.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="Root/Panel"]
+offset_left = 62.0
+offset_top = 6.0
+offset_right = 296.0
+offset_bottom = 20.0
+theme_override_font_sizes/font_size = 12
+text = "Nombre"
+
+[node name="BodyLabel" type="Label" parent="Root/Panel"]
+offset_left = 62.0
+offset_top = 22.0
+offset_right = 296.0
+offset_bottom = 66.0
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+text = "Texto del dialogo"

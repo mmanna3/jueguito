@@ -42,6 +42,42 @@ manteniendo el pixel art nítido.
 Ver `assets/CREDITS.md` para las coordenadas exactas de cada tile/personaje
 usado, por si querés reemplazarlos.
 
+## Etapa 2: diálogos (2026-09-15)
+
+Se agregó un sistema de diálogo simple:
+
+- **Tecla:** `ui_accept` (Enter / Espacio — la acción default de Godot, no
+  hubo que tocar el Input Map).
+- **Cómo funciona:** `Player.gd` guarda hacia dónde está mirando
+  (`facing`). Al apretar la tecla de interacción, calcula la celda de
+  enfrente y busca si hay un NPC ahí (grupo `"npc"`). Si lo hay, le pide al
+  autoload `Dialogue` (`scripts/DialogueBox.gd` + `scenes/DialogueBox.tscn`)
+  que muestre sus líneas una por una; cada `NPC` tiene `npc_name` y
+  `dialogue_lines` exportados, seteados por instancia en `Town.tscn`.
+  Mientras el diálogo está activo, el jugador no se puede mover.
+- **Probado:** con Godot corriendo (self-test temporal en `_ready()` de
+  `Town.gd`, después revertido) se confirmó por código que el diálogo abre
+  con el NPC correcto al interactuar de frente, avanza línea por línea, se
+  cierra solo al terminar, y no se dispara si no hay nadie enfrente. También
+  se sacó una captura real mostrando el cartel en pantalla.
+- **Bug encontrado y corregido:** el autoload en `project.godot` necesita
+  el prefijo `*` (`Dialogue="*res://scenes/DialogueBox.tscn"`) — sin él,
+  Godot no lo registra como singleton global y falla la compilación de
+  cualquier script que lo referencie.
+- **Bug reportado y corregido (2026-09-15):** el diálogo nunca terminaba —
+  al llegar a la última línea y apretar Enter, se reabría en la línea 1 en
+  vez de cerrarse. Causa: tanto `Player.gd` como `DialogueBox.gd` sondeaban
+  `Input.is_action_just_pressed("ui_accept")` cada uno por su lado en
+  `_physics_process`. En el frame exacto en que `Dialogue._advance()`
+  cerraba el diálogo (`is_active = false`), el chequeo de `Player`
+  (`if Dialogue.is_active: return`) ya veía `false` y trataba ese mismo
+  Enter como un interact nuevo, reabriendo la conversación. Se resolvió
+  pasando el manejo de `ui_accept` de sondeo (`_physics_process`) a evento
+  (`_unhandled_input` + `get_viewport().set_input_as_handled()`), que
+  garantiza que un mismo Enter lo procese un solo handler. El movimiento
+  (flechas/WASD, que sí necesita sondeo para repetirse mientras se mantiene
+  apretada la tecla) no se tocó.
+
 
 
 ## Objetivo de esta etapa
@@ -214,3 +250,81 @@ Abrir el proyecto en Godot, correr `Town.tscn` (F6) y verificar:
 - Animación de caminata (varios frames por dirección) en vez de sprite fijo.
 - Transición entre mapas (ej. entrar a una casa).
 - Sistema de combate por turnos estilo Pokémon.
+
+## Etapa 3: escena del bosque, Ryan, Abuela Catta y arte propio (2026-09-16)
+
+Se agregó una escena inicial nueva con arte propio (no placeholders de
+Kenney), reemplazando a `Town.tscn` como `run/main_scene` (que sigue en el
+proyecto, funcional, para más adelante).
+
+### Arte
+
+Ver `COMO_DARLE_MI_ESTILO_A_LOS_SRPITES.md` para la guía general. Lo que se
+hizo acá en concreto:
+
+- **Mapa (`assets/tileset_forest/`)**: en vez de dibujar tiles nuevos de
+  cero, se **recolorearon** (hue-shift + brillo/saturación, con
+  ImageMagick) el pasto, camino y agua del tileset de Kenney hacia gamas de
+  violeta — mantiene el sombreado original, solo cambia el color. El único
+  tile dibujado a mano fue el árbol con tronco: se recortó la copa
+  recoloreada (violeta) y se le agregó un tronco marrón de un par de
+  píxeles, ya que el tile original de Kenney no tenía tronco visible. Los
+  6 tiles quedaron en `forest_sheet.png` (pasto, camino, arbusto de borde,
+  árbol con tronco, agua, arbusto decorativo) + `forest_tileset.tres`.
+- **Ryan (protagonista) y Abuela Catta**: dibujados a mano, pixel por
+  pixel, con un script propio (`pixelart.py`, ver scratchpad de la sesión)
+  que arma un PNG a partir de una grilla de caracteres + paleta de colores
+  — no hay herramienta de generación de imágenes disponible. Sprites de
+  16x16 en `assets/characters_custom/` (`ryan.png`, `abuela.png`). Al ser
+  dibujo propio simple, la calidad es más "indie chico" que el detalle del
+  pack de Kenney — si en algún momento no convence, se puede reemplazar por
+  un pack temático (ej. buscar en itch.io algo tipo "Mystic Woods").
+- **Retratos de diálogo**: no son un dibujo aparte — son la cabeza de cada
+  sprite (recorte de las primeras 10 filas) reusada tal cual, así quedan
+  100% consistentes con el personaje que se ve caminando. Archivos
+  `ryan_portrait.png` / `abuela_portrait.png`.
+- Ahora `Player.tscn` (compartido por `Town.tscn` y `Forest.tscn`) usa el
+  sprite de Ryan en vez del genérico de Kenney — el protagonista es el
+  mismo en todo el juego.
+
+### Sistema de diálogo generalizado
+
+`DialogueBox` pasó de "un NPC dice N líneas" a **conversaciones de varios
+hablantes**: `Dialogue.start_conversation(entries)` recibe un array de
+`{"speaker": ..., "portrait": ..., "text": ...}` y muestra cada entrada al
+apretar `ui_accept`. Se agregó un `TextureRect` a la izquierda del cartel
+con el retrato del hablante actual (se oculta solo si esa entrada no tiene
+retrato, para no romper los NPCs viejos del pueblo que no tienen uno).
+
+Para que una escena pueda armar una conversación a medida (con líneas del
+propio jugador incluidas, como la del bosque) sin tocar el NPC genérico,
+`NPC.gd` ahora tiene:
+- `custom_texture` / `portrait` (exportados): para usar un sprite propio
+  en vez de una pieza del spritesheet de Kenney.
+- Señal `interact_requested`: si algo está conectado a esta señal (por
+  ejemplo `Forest.gd`), el NPC le cede el control de la interacción en vez
+  de mostrar su diálogo genérico de una sola voz.
+
+`Player.gd` ahora simplemente llama a `npc.interact()` — quedó desacoplado
+de cómo cada NPC decide manejar la conversación.
+
+### Escena `Forest.tscn` / `Forest.gd`
+
+Bosque cerrado de 15x10 tiles, con una laguna de Agua Púrpura visible al
+lado de donde está parada la Abuela Catta (para que la charla tenga un
+correlato visual), árboles y arbustos decorativos, y un sendero. Ryan
+arranca cerca; al acercarse a la Abuela Catta y apretar Enter, se dispara
+la conversación completa (10 líneas, alternando Ryan/Abuela Catta, cada
+una con su retrato), definida directamente en `Forest.gd`.
+
+### Probado con Godot real
+
+- Import headless sin errores.
+- Self-test simulando 11 Enters reales: la conversación completa avanza
+  línea por línea alternando hablante y retrato correctamente, y se cierra
+  sola al final (sin reabrirse).
+- Se verificó que los NPCs viejos del pueblo (Don Braulio, etc.) siguen
+  funcionando con el sistema de diálogo generalizado (sin retrato, como
+  corresponde).
+- Captura de pantalla real confirmando el bosque violeta y el cartel de
+  diálogo con retrato en pantalla.

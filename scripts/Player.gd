@@ -2,18 +2,36 @@ extends CharacterBody2D
 
 const TILE_SIZE := 16
 const MOVE_DURATION := 0.15
+const INTERACT_DISTANCE := 4.0
 
 var is_moving := false
 var move_tween: Tween
+var facing := Vector2.DOWN
 
 
 func _physics_process(_delta: float) -> void:
+	if Dialogue.is_active:
+		return
+
 	if is_moving:
 		return
 
 	var dir := _get_input_direction()
 	if dir != Vector2.ZERO:
+		facing = dir
 		_try_move(dir)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Manejado como evento (no polling) para que un mismo Enter no pueda
+	# ser leido dos veces en el mismo frame por Player y por Dialogue
+	# (eso causaba que el dialogo se reabriera solo al llegar a la ultima
+	# linea, en vez de cerrarse).
+	if Dialogue.is_active:
+		return
+	if event.is_action_pressed("ui_accept"):
+		get_viewport().set_input_as_handled()
+		_interact()
 
 
 func _get_input_direction() -> Vector2:
@@ -45,3 +63,11 @@ func _try_move(dir: Vector2) -> void:
 
 func _on_move_finished() -> void:
 	is_moving = false
+
+
+func _interact() -> void:
+	var target_pos := global_position + facing * TILE_SIZE
+	for npc in get_tree().get_nodes_in_group("npc"):
+		if npc.global_position.distance_to(target_pos) < INTERACT_DISTANCE:
+			npc.interact()
+			return

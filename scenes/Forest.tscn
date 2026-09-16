@@ -1,0 +1,25 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/Forest.gd" id="1_script"]
+[ext_resource type="TileSet" path="res://assets/tileset_forest/forest_tileset.tres" id="2_tileset"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/NPC.tscn" id="4_npc"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/abuela.png" id="5_abuela_tex"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/abuela_portrait.png" id="6_abuela_portrait"]
+
+[node name="Forest" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="NPCs" type="Node2D" parent="."]
+
+[node name="AbuelaCatta" parent="NPCs" instance=ExtResource("4_npc")]
+position = Vector2(136, 88)
+custom_texture = ExtResource("5_abuela_tex")
+portrait = ExtResource("6_abuela_portrait")
+npc_name = "Abuela Catta"
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(72, 88)

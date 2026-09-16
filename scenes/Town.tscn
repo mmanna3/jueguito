@@ -16,14 +16,20 @@ tile_set = ExtResource("2_tileset")
 [node name="NPC1" parent="NPCs" instance=ExtResource("4_npc")]
 position = Vector2(40, 56)
 atlas_coords = Vector2i(0, 6)
+npc_name = "Don Braulio"
+dialogue_lines = PackedStringArray("¡Bienvenido al pueblo!", "Hace años que vivo en esa casa.", "Cualquier cosa que necesites, avisame.")
 
 [node name="NPC2" parent="NPCs" instance=ExtResource("4_npc")]
 position = Vector2(200, 56)
 atlas_coords = Vector2i(1, 6)
+npc_name = "Mara"
+dialogue_lines = PackedStringArray("¿Viniste a explorar por acá?", "Todavía no hay mucho para hacer, pero el paisaje es lindo.", "Volvé pronto.")
 
 [node name="NPC3" parent="NPCs" instance=ExtResource("4_npc")]
 position = Vector2(120, 120)
 atlas_coords = Vector2i(1, 8)
+npc_name = "Tomi"
+dialogue_lines = PackedStringArray("¡Hola! Estoy mirando el agua.", "Dicen que hay peces ahí, pero nunca vi ninguno.", "¿Vos viste algo?")
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 position = Vector2(120, 88)
