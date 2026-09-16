@@ -22,6 +22,8 @@ const OBSTACLE_VARIETY := [HEDGE, TREE_TRUNK, PINE_TRUNK]
 const RYAN_PORTRAIT := preload("res://assets/characters_custom/ryan_portrait.png")
 const ABUELA_PORTRAIT := preload("res://assets/characters_custom/abuela_portrait.png")
 const STRANGER_PORTRAIT := preload("res://assets/characters_custom/stranger_portrait.png")
+const STRANGER_SHOCKED_TEX := preload("res://assets/characters_custom/stranger_shocked.png")
+const STRANGER_SHOCKED_PORTRAIT := preload("res://assets/characters_custom/stranger_shocked_portrait.png")
 
 const WATER_FLAVOR_TEXT := "El Agua Púrpura brota de la tierra calmada, como si escondiera el secreto de un pasado olvidado."
 
@@ -47,6 +49,10 @@ func _ready() -> void:
 	_build_map()
 	abuela.interact_requested.connect(_on_abuela_interact)
 	pond.interact_requested.connect(_on_pond_interact)
+
+	if GameState.returning_from_battle_defeat:
+		GameState.returning_from_battle_defeat = false
+		await _play_post_battle_scene()
 
 
 func _build_map() -> void:
@@ -235,6 +241,43 @@ func _play_stranger_scene() -> void:
 			"text": "Mirá si voy a rendirme con estos bobos."},
 		{"speaker": "Extraño", "portrait": STRANGER_PORTRAIT,
 			"text": "Qué mal me caen los intentos de héroe."},
+	])
+	await Dialogue.dialogue_closed
+
+	get_tree().change_scene_to_file("res://scenes/Battle.tscn")
+
+
+## Se corre al volver de una batalla perdida contra el Extraño (ver
+## GameState.returning_from_battle_defeat). La abuela intercede.
+func _play_post_battle_scene() -> void:
+	for i in range(4):
+		await get_tree().process_frame
+
+	player.movement_locked = true
+	player.global_position = pond.global_position + Vector2(-32, 30)
+	stranger.visible = true
+	stranger.position = STRANGER_ARRIVAL_POS
+
+	var cam := player.get_node("Camera2D") as Camera2D
+	cam.global_position = player.global_position
+
+	Dialogue.start_conversation([
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT, "text": "Dejame a mí."},
+	])
+	await Dialogue.dialogue_closed
+
+	await _screen_shake(cam, 0.4, 3.5)
+
+	# algo concreto le pasa al Extraño: cambia la cara (sorpresa/dolor/bronca)
+	# y tiembla un ratito, aparte del temblor general de la pantalla.
+	stranger.set_sprite_texture(STRANGER_SHOCKED_TEX)
+	await stranger.shake(0.5, 2.5)
+
+	Dialogue.start_conversation([
+		{"speaker": "Extraño", "portrait": STRANGER_SHOCKED_PORTRAIT,
+			"text": "Nunca me imaginé que esta vieja sería tan poderosa."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Ryan, rápido, vamos."},
 	])
 	await Dialogue.dialogue_closed
 

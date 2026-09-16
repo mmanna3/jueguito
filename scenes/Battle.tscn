@@ -1,0 +1,198 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/Battle.gd" id="1_script"]
+[ext_resource type="FontFile" path="res://assets/fonts/VT323-Regular.ttf" id="2_vt323"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.098, 0.078, 0.145, 0.93)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.725, 0.651, 0.851, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
+bg_color = Color(0.102, 0.086, 0.137, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.36, 0.46, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill_player"]
+bg_color = Color(0.482, 0.788, 0.435, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill_enemy"]
+bg_color = Color(0.706, 0.275, 0.478, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="Battle" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="UI" type="Control" parent="."]
+offset_right = 320.0
+offset_bottom = 180.0
+mouse_filter = 2
+
+[node name="Background" type="ColorRect" parent="UI"]
+offset_right = 320.0
+offset_bottom = 180.0
+color = Color(0.169, 0.141, 0.212, 1)
+
+[node name="Ground" type="ColorRect" parent="UI"]
+offset_top = 112.0
+offset_right = 320.0
+offset_bottom = 180.0
+color = Color(0.09, 0.071, 0.125, 1)
+
+[node name="EnemySprite" type="TextureRect" parent="UI"]
+offset_left = 210.0
+offset_top = 46.0
+offset_right = 290.0
+offset_bottom = 76.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PlayerSprite" type="TextureRect" parent="UI"]
+offset_left = 30.0
+offset_top = 46.0
+offset_right = 110.0
+offset_bottom = 76.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="EnemyPanel" type="Panel" parent="UI"]
+offset_left = 172.0
+offset_top = 6.0
+offset_right = 312.0
+offset_bottom = 44.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="NameLabel" type="Label" parent="UI/EnemyPanel"]
+offset_left = 8.0
+offset_top = 3.0
+offset_right = 132.0
+offset_bottom = 15.0
+theme_override_colors/font_color = Color(1, 0.844, 0.369, 1)
+theme_override_fonts/font = ExtResource("2_vt323")
+theme_override_font_sizes/font_size = 13
+text = "Extraño  Nv.50"
+
+[node name="HPBar" type="ProgressBar" parent="UI/EnemyPanel"]
+offset_left = 8.0
+offset_top = 16.0
+offset_right = 132.0
+offset_bottom = 24.0
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill_enemy")
+show_percentage = false
+
+[node name="HPLabel" type="Label" parent="UI/EnemyPanel"]
+offset_left = 8.0
+offset_top = 24.0
+offset_right = 132.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.929, 0.906, 0.965, 1)
+theme_override_fonts/font = ExtResource("2_vt323")
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 2
+text = "1000 / 1000"
+
+[node name="PlayerPanel" type="Panel" parent="UI"]
+offset_left = 8.0
+offset_top = 6.0
+offset_right = 148.0
+offset_bottom = 44.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="NameLabel" type="Label" parent="UI/PlayerPanel"]
+offset_left = 8.0
+offset_top = 3.0
+offset_right = 132.0
+offset_bottom = 15.0
+theme_override_colors/font_color = Color(1, 0.844, 0.369, 1)
+theme_override_fonts/font = ExtResource("2_vt323")
+theme_override_font_sizes/font_size = 13
+text = "Ryan  Nv.1"
+
+[node name="HPBar" type="ProgressBar" parent="UI/PlayerPanel"]
+offset_left = 8.0
+offset_top = 16.0
+offset_right = 132.0
+offset_bottom = 24.0
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill_player")
+show_percentage = false
+
+[node name="HPLabel" type="Label" parent="UI/PlayerPanel"]
+offset_left = 8.0
+offset_top = 24.0
+offset_right = 132.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.929, 0.906, 0.965, 1)
+theme_override_fonts/font = ExtResource("2_vt323")
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 2
+text = "12 / 12"
+
+[node name="AttackMenu" type="Panel" parent="UI"]
+offset_left = 8.0
+offset_top = 78.0
+offset_right = 312.0
+offset_bottom = 174.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Slot0" type="Label" parent="UI/AttackMenu"]
+offset_left = 20.0
+offset_top = 8.0
+offset_right = 284.0
+offset_bottom = 28.0
+theme_override_colors/font_color = Color(1, 0.844, 0.369, 1)
+theme_override_fonts/font = ExtResource("2_vt323")
+theme_override_font_sizes/font_size = 18
+text = "Golpear"
+
+[node name="Slot1" type="Label" parent="UI/AttackMenu"]
+offset_left = 20.0
+offset_top = 30.0
+offset_right = 284.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.45, 0.4, 0.5, 1)
+theme_override_fonts/font = ExtResource("2_vt323")
+theme_override_font_sizes/font_size = 18
+text = "—"
+
+[node name="Slot2" type="Label" parent="UI/AttackMenu"]
+offset_left = 20.0
+offset_top = 52.0
+offset_right = 284.0
+offset_bottom = 72.0
+theme_override_colors/font_color = Color(0.45, 0.4, 0.5, 1)
+theme_override_fonts/font = ExtResource("2_vt323")
+theme_override_font_sizes/font_size = 18
+text = "—"
+
+[node name="Slot3" type="Label" parent="UI/AttackMenu"]
+offset_left = 20.0
+offset_top = 74.0
+offset_right = 284.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.45, 0.4, 0.5, 1)
+theme_override_fonts/font = ExtResource("2_vt323")
+theme_override_font_sizes/font_size = 18
+text = "—"

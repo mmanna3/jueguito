@@ -66,3 +66,21 @@ func walk_to(target_pos: Vector2, duration: float) -> void:
 	tw.tween_property(self, "global_position", target_pos, duration) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	await tw.finished
+
+
+## Cambia el sprite en el momento (por ejemplo, a una expresion distinta
+## tras algo que le pasa en una cutscene).
+func set_sprite_texture(tex: Texture2D) -> void:
+	sprite.texture = tex
+
+
+## Sacude al personaje en el lugar (sin moverlo de verdad al terminar).
+func shake(duration: float, strength: float) -> void:
+	var original := position
+	var elapsed := 0.0
+	while elapsed < duration:
+		var pct := 1.0 - (elapsed / duration)
+		position = original + Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * strength * pct
+		await get_tree().create_timer(0.03).timeout
+		elapsed += 0.03
+	position = original

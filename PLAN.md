@@ -552,3 +552,104 @@ manantial). Probado con Godot real simulando al jugador parado y encarando
 el manantial desde las 4 direcciones (no llamando `.interact()` a mano) —
 las 4 funcionan — y también que la abuela y los NPCs del pueblo (16x16)
 lo siguen funcionando igual que antes.
+
+## Etapa 5: sistema de batalla por turnos (2026-09-16)
+
+Primer combate del juego: Ryan vs. Extraño, al terminar el diálogo de los
+3 junto al manantial.
+
+### Números acordados con el usuario
+
+| | Nivel | PS (HP) |
+|---|---|---|
+| Ryan | 1 | 12 |
+| Extraño | 50 | 1000 |
+
+- **Golpear** (Ryan): 5 de daño.
+- **Sombra Extraña** (Extraño): 110 de daño (definido por el usuario tras
+  preguntarle — mata a Ryan de un solo golpe con margen).
+
+No hace falta "trampear" el resultado: con esos números, Ryan pega una vez
+(Extraño 1000→995), el Extraño responde con Sombra Extraña y lo deja en 0
+— la derrota sale sola de la matemática del combate.
+
+### Diseño
+
+- **Escena de batalla aparte** (`Battle.tscn`/`Battle.gd`), como en un RPG
+  clásico de verdad: se corta la vista del bosque (`get_tree().change_scene_to_file`)
+  y aparece la pantalla de combate (fondo propio, HP bars, sprites
+  agrandados de Ryan y el Extraño reusando el arte ya dibujado).
+- **Turnos fijos**: primero Ryan (el jugador elige, aunque hoy solo hay una
+  opción real), después el Extraño (automático, siempre usa Sombra
+  Extraña).
+- **Menú de 4 slots de ataque**, navegable con flechas/WASD + Enter, tal
+  como pidió el usuario para dejar la puerta abierta a que Ryan aprenda más
+  ataques después. Slot 0 = "Golpear" (dorado, seleccionable); slots 1-3 =
+  "—" (gris, bloqueados — apretar Enter ahí no hace nada).
+- El "relato" del combate ("Ryan usa Golpear.", "¡Extraño perdió 5 PS!",
+  etc.) reutiliza el mismo `Dialogue` autoload que ya existe para las
+  conversaciones — mismo cartel, misma tecla para avanzar, cero UI nueva
+  que aprender.
+- Los datos del combate (nombres, niveles, HP, ataques) están hardcodeados
+  en `Battle.gd` porque hoy es el único combate posible en el juego. El día
+  que haya más de un enemigo, eso pasa a viajar desde afuera (por ejemplo
+  vía `GameState`).
+
+### Qué pasa al perder (definido con el usuario)
+
+Vuelve al bosque y sigue la conversación que escribió:
+
+> **ABUELA:** Dejame a mí.
+> *(tiembla la pantalla)*
+> **EXTRAÑO:** Nunca me imaginé que esta vieja sería tan poderosa.
+> **ABUELA:** Ryan, rápido, vamos.
+
+Y ahí queda (nada más, como en la etapa anterior).
+
+**Cómo viaja el estado entre escenas**: se agregó un autoload chico,
+`GameState.gd` (`var returning_from_battle_defeat`), porque Godot
+reinstancia `Forest.tscn` de cero en cada cambio de escena y pierde
+cualquier variable local. `Battle.gd` prende la bandera justo antes de
+volver al bosque; `Forest.gd` la lee una vez en `_ready()`, la apaga, y si
+estaba prendida dispara la escena de la abuela (reposiciona a Ryan y al
+Extraño cerca del manantial, hace temblar la cámara entre las dos
+conversaciones) en vez de arrancar el bosque normal.
+
+### Probado con Godot real
+
+Se corrió la cadena completa (`Battle.tscn` como escena principal
+temporalmente, simulando la selección de "Golpear" y avanzando los
+carteles con `Dialogue._advance()`, sin tocar el teclado): el menú
+bloqueado no hace nada, Golpear resta exactamente 5 PS (995/1000), Sombra
+Extraña dejó a Ryan en 0/12, la escena cambió sola a `Forest.tscn`, y ahí
+`GameState.returning_from_battle_defeat` llegó en `true` y disparó la
+escena de la abuela hasta el final (con el movimiento del jugador
+desbloqueado al cerrar). Más dos capturas reales de la pantalla de batalla
+(el menú recién abierto, y el resultado final con la barra de Ryan vacía y
+la del Extraño casi intacta).
+
+### Ajustes posteriores del usuario
+
+- **El cursor del menú se podía mover a slots vacíos** (apretar "abajo"
+  deseleccionaba "Golpear" y había que volver con "arriba", o dar la
+  vuelta completa). `Battle.gd::_move_cursor()` ahora salta los slots con
+  `null` en vez de pasar por ellos — si solo hay un ataque real, el cursor
+  simplemente no se mueve. Probado por código: apretar "abajo" una, tres, y
+  "arriba" una vez, siempre se queda en el slot 0.
+- **El Extraño reacciona de verdad cuando la abuela interviene.** Además
+  del temblor de cámara ya existente, ahora:
+  - Se dibujó una variante del sprite del Extraño
+    (`stranger_shocked.png` + su retrato) con los ojos y el emblema del
+    pecho en naranja-rojo intenso en vez del violeta calmo — a 16x16 un
+    cambio de color se lee mucho mejor que intentar dibujar un gesto
+    facial distinto, y con eso alcanza para transmitir sorpresa/dolor/
+    bronca. `NPC.gd` ganó `set_sprite_texture()` para poder cambiarlo en
+    caliente.
+  - El propio NPC del Extraño (el que está parado en el mapa) tiembla un
+    ratito en el lugar, después del temblor general de la pantalla.
+    `NPC.gd` ganó `shake(duration, strength)`, igual que el temblor de
+    cámara pero aplicado a la posición del personaje.
+  - Su retrato en el cartel de diálogo de esa línea también usa la cara
+    con los ojos naranjas, no la calma de siempre.
+  Probado con Godot real: capturas confirmando que el sprite en el mapa
+  efectivamente cambia de expresión en el momento justo.
