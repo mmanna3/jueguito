@@ -45,7 +45,28 @@ npc_name = "Abuela Catta"
 
 [node name="Stranger" parent="NPCs" instance=ExtResource("4_npc")]
 visible = false
-position = Vector2(360, -40)
+position = Vector2(344, -40)
+custom_texture = ExtResource("9_stranger_tex")
+portrait = ExtResource("10_stranger_portrait")
+npc_name = "Extraño"
+
+[node name="Stranger2" parent="NPCs" instance=ExtResource("4_npc")]
+visible = false
+position = Vector2(376, -40)
+custom_texture = ExtResource("9_stranger_tex")
+portrait = ExtResource("10_stranger_portrait")
+npc_name = "Extraño"
+
+[node name="Stranger3" parent="NPCs" instance=ExtResource("4_npc")]
+visible = false
+position = Vector2(392, -40)
+custom_texture = ExtResource("9_stranger_tex")
+portrait = ExtResource("10_stranger_portrait")
+npc_name = "Extraño"
+
+[node name="Stranger4" parent="NPCs" instance=ExtResource("4_npc")]
+visible = false
+position = Vector2(392, -60)
 custom_texture = ExtResource("9_stranger_tex")
 portrait = ExtResource("10_stranger_portrait")
 npc_name = "Extraño"

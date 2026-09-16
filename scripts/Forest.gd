@@ -26,8 +26,25 @@ const STRANGER_SHOCKED_TEX := preload("res://assets/characters_custom/stranger_s
 const STRANGER_SHOCKED_PORTRAIT := preload("res://assets/characters_custom/stranger_shocked_portrait.png")
 
 const WATER_FLAVOR_TEXT := "El Agua Púrpura brota de la tierra calmada, como si escondiera el secreto de un pasado olvidado."
+const ABUELA_ATTACK_TEXT := "Abuela Catta utiliza el Cristal Púrpura para atacar a los Extraños."
+const ABUELA_HURRY_TEXT := "Rápido, Ryan, hacia el sur."
 
-const STRANGER_ARRIVAL_POS := Vector2(392, 168)
+## Posiciones finales de los 4 Extraños alrededor del manantial (no todos
+## juntos en el mismo tile -- si no, no queda hueco para acercarse a
+## encarar a cada uno por separado, ni para que Ryan pase entre el
+## manantial y ellos).
+const STRANGER_ARRIVAL_POSITIONS := [
+	Vector2(344, 136), Vector2(376, 136), Vector2(392, 152), Vector2(392, 184),
+]
+
+## Frases de cada Extraño una vez que la abuela los ataca. Son 4 y solo
+## hay 3 frases distintas -- el 4to repite la primera.
+const STRANGER_POST_ATTACK_LINES := [
+	"Nunca había visto un poder semejante.",
+	"Ya vienen refuerzos.",
+	"Ouch, eso dolió.",
+	"Nunca había visto un poder semejante.",
+]
 
 ## "Ground" siempre tiene un terreno solido (pasto/camino/agua) debajo de todo.
 ## "Decoration" tiene los obstaculos (arboles, arbustos, rocas, orillas), que
@@ -41,8 +58,13 @@ const STRANGER_ARRIVAL_POS := Vector2(392, 168)
 @onready var pond: StaticBody2D = $Pond
 @onready var player: CharacterBody2D = $Player
 
+@onready var strangers: Array = [
+	stranger, $NPCs/Stranger2, $NPCs/Stranger3, $NPCs/Stranger4,
+]
+
 var _talked_to_abuela := false
 var _water_event_played := false
+var _abuela_following := false
 
 
 func _ready() -> void:
@@ -170,39 +192,21 @@ func _paint_accents() -> void:
 
 
 func _on_abuela_interact() -> void:
+	if _abuela_following:
+		# ya paso el ataque: la abuela esta apurando a Ryan, no tiene
+		# sentido repetir el saludo original.
+		Dialogue.start_conversation([
+			{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT, "text": ABUELA_HURRY_TEXT},
+		])
+		return
+
 	Dialogue.start_conversation([
 		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
-			"text": "¿Abuela? ¿Qué hacés tan lejos de casa, con este frío?"},
+			"text": "¡Abuela! Todos en la Ceremonia te están buscando, no pensaba encontrarte en el Bosque."},
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Buscando el murmullo del agua, muchacho. Hace tiempo que no la escuchaba cantar tan cerca."},
-		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
-			"text": "¿El agua… púrpura? Siempre me dijiste que no me acercara a los manantiales."},
+			"text": "Lo sé, Ryan. A veces, los humanos me agobian y necesito la compañía de los árboles y el agua. Este bosque es anterior a La Era de los Cristales, ¿sabías?"},
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Y hice bien en decírtelo, hasta que tuvieras edad de entenderlo."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Dicen los viejos relatos que nace donde los Cristales duermen bajo la tierra."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Y que se lleva su color al despertar."},
-		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
-			"text": "¿Cristales? Nunca vi ninguno."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Pocos los ven, y menos los que viven para contarlo con la mente entera."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Pero el agua que ellos tiñen sí se puede tocar."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Cura heridas que ni el tiempo cierra, y calma fiebres que ningún médico entiende."},
-		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
-			"text": "¿Entonces por qué nadie la usa?"},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Porque toda cura tiene su precio."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Bebida sin cuidado, la misma agua que sana también reclama algo a cambio."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Por eso los antiguos la trataban con respeto, no con codicia."},
-		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
-			"text": "Tendré cuidado, abuela. Lo prometo."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Lo sé. Por eso te lo cuento a vos y no a otro. Ahora andá, que el bosque se pone hablador cuando cae la tarde."},
+			"text": "En el Manantial Púrpura se esconden las respuestas."},
 	])
 	await Dialogue.dialogue_closed
 	_talked_to_abuela = true
@@ -227,8 +231,11 @@ func _play_stranger_scene() -> void:
 	await _attention_grabber()
 	await get_tree().create_timer(0.5).timeout
 
-	stranger.visible = true
-	await stranger.walk_to(STRANGER_ARRIVAL_POS, 1.4)
+	# el Extraño no viene solo: entran los 4 juntos, pero uno solo habla
+	for i in strangers.size():
+		strangers[i].visible = true
+		strangers[i].walk_to(STRANGER_ARRIVAL_POSITIONS[i], 1.4)  # en paralelo
+	await get_tree().create_timer(1.4).timeout
 
 	Dialogue.start_conversation([
 		{"speaker": "Extraño", "portrait": STRANGER_PORTRAIT,
@@ -248,15 +255,18 @@ func _play_stranger_scene() -> void:
 
 
 ## Se corre al volver de una batalla perdida contra el Extraño (ver
-## GameState.returning_from_battle_defeat). La abuela intercede.
+## GameState.returning_from_battle_defeat). La abuela ataca a los 4
+## Extraños; despues, Ryan queda libre para recorrer el bosque y hablarles
+## (ya vencidos), con la abuela seleguiendo un paso atras.
 func _play_post_battle_scene() -> void:
 	for i in range(4):
 		await get_tree().process_frame
 
 	player.movement_locked = true
 	player.global_position = pond.global_position + Vector2(-32, 30)
-	stranger.visible = true
-	stranger.position = STRANGER_ARRIVAL_POS
+	for i in strangers.size():
+		strangers[i].visible = true
+		strangers[i].position = STRANGER_ARRIVAL_POSITIONS[i]
 
 	var cam := player.get_node("Camera2D") as Camera2D
 	cam.global_position = player.global_position
@@ -266,22 +276,40 @@ func _play_post_battle_scene() -> void:
 	])
 	await Dialogue.dialogue_closed
 
+	Dialogue.start_conversation([
+		{"speaker": "", "portrait": null, "text": ABUELA_ATTACK_TEXT},
+	])
+	await Dialogue.dialogue_closed
+
 	await _screen_shake(cam, 0.4, 3.5)
 
-	# algo concreto le pasa al Extraño: cambia la cara (sorpresa/dolor/bronca)
-	# y tiembla un ratito, aparte del temblor general de la pantalla.
-	stranger.set_sprite_texture(STRANGER_SHOCKED_TEX)
-	await stranger.shake(0.5, 2.5)
+	# algo concreto les pasa a todos los Extraños: cambia la cara
+	# (sorpresa/dolor/bronca) y tiemblan un ratito, aparte del temblor
+	# general de la pantalla. Todos reaccionan igual, en paralelo.
+	for i in strangers.size():
+		strangers[i].set_sprite_texture(STRANGER_SHOCKED_TEX)
+		strangers[i].portrait = STRANGER_SHOCKED_PORTRAIT
+		strangers[i].dialogue_lines = PackedStringArray([STRANGER_POST_ATTACK_LINES[i]])
+		strangers[i].shake(0.5, 2.5)  # en paralelo
+	await get_tree().create_timer(0.5).timeout
 
 	Dialogue.start_conversation([
 		{"speaker": "Extraño", "portrait": STRANGER_SHOCKED_PORTRAIT,
-			"text": "Nunca me imaginé que esta vieja sería tan poderosa."},
-		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Ryan, rápido, vamos."},
+			"text": "¡Agghh! Nunca vi un poder semejante."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT, "text": ABUELA_HURRY_TEXT},
 	])
 	await Dialogue.dialogue_closed
 
 	player.movement_locked = false
+	_abuela_following = true
+	player.move_finished.connect(_on_player_moved_for_follow)
+
+
+## La abuela camina siempre a la celda que Ryan acaba de dejar libre, asi
+## queda pegada a el sin importar para donde doble.
+func _on_player_moved_for_follow(from_pos: Vector2, _to_pos: Vector2) -> void:
+	if _abuela_following:
+		abuela.walk_to(from_pos, 0.15)
 
 
 ## Llama la atencion del jugador: un "!" arriba de Ryan y un temblor corto

@@ -653,3 +653,83 @@ la del Extraño casi intacta).
     con los ojos naranjas, no la calma de siempre.
   Probado con Godot real: capturas confirmando que el sprite en el mapa
   efectivamente cambia de expresión en el momento justo.
+
+## Etapa 6: 4 Extraños, ataque de la abuela narrado, y bosque libre (2026-09-16)
+
+### 1. Ahora vienen 4 Extraños, no uno solo
+
+`Forest.tscn` tiene `Stranger`, `Stranger2`, `Stranger3`, `Stranger4` (misma
+escena/arte para los 4 — son genéricos). `Forest.gd` los maneja como
+`strangers: Array` y los mueve/anima en paralelo (caminata de entrada,
+temblor, cambio de cara) con loops, no código repetido x4. Se ubican en 3
+de los 4 lados del manantial (no rodeándolo del todo), para dejar hueco
+para acercarse a cada uno y para que Ryan pueda pasar entre ellos y el
+agua. Solo el primero (`Stranger`) habla en la confrontación inicial — los
+otros 3 están ahí en silencio, como pediste.
+
+### 2. Texto de narrador al atacar
+
+Justo después de que la abuela dice "Dejame a mí." y antes del temblor de
+pantalla, aparece un texto sin nombre de hablante (mismo estilo narración
+que ya usábamos para el manantial): *"Abuela Catta utiliza el Cristal
+Púrpura para atacar a los Extraños."*
+
+### 3. Bosque libre después del ataque
+
+Se sacó el diálogo final fijo que cerraba la escena ("Nunca me
+imaginé.../Ryan, rápido, vamos") — en su lugar, apenas termina el ataque:
+
+- Los 4 Extraños reaccionan **todos igual, en paralelo**: cambian a la cara
+  con los ojos naranjas y tiemblan un ratito cada uno (`NPC.gd::shake()`,
+  ya existía, ahora se llama x4 sin esperar uno a que termine el otro).
+- Cada uno queda con su propia frase para cuando le hablás (usando el
+  mecanismo genérico de `NPC.gd`, no hizo falta código nuevo): *"Nunca
+  había visto un poder semejante"*, *"Ya vienen refuerzos"*, *"Ouch, eso
+  dolió"* — como pediste solo 3 frases distintas para 4 personajes, el 4to
+  repite la primera.
+- El jugador recupera el control, y **la abuela lo sigue**: `Player.gd`
+  ahora emite una señal `move_finished(from_pos, to_pos)` cada vez que
+  termina un paso; `Forest.gd` la escucha y manda a la abuela
+  (`NPC.gd::walk_to()`) a deslizarse hasta la celda que Ryan acaba de
+  dejar libre — quedar siempre pegada un paso atrás, para cualquier lado
+  que doble. Se le agregó a `walk_to()` un chequeo para cortar el tween
+  anterior si todavía estaba en curso (si no, dos deslizamientos seguidos
+  muy rápido competían por la misma posición y quedaba raro).
+
+Probado con Godot real (dos self-tests separados): la llegada inicial de
+los 4 al manantial cae exacto en sus posiciones; después del ataque, los 4
+tienen la cara/retrato/frase correctos, la abuela sigue a Ryan a la celda
+exacta que dejó libre, y hablar con cada uno de los 4 da la frase que le
+corresponde. Más una captura real de los 4 alrededor del manantial.
+
+### El "bug" de las casillas bloqueadas: no era un bug
+
+Preguntaste por qué, después de que la abuela ataca, Ryan no puede pasar
+por algunas casillas alrededor del manantial. La causa: el Extraño (antes
+solo había uno) queda parado ahí, visible, con colisión — como cualquier
+NPC, bloquea su propia casilla. Antes de que llegara no había nadie ahí,
+por eso se sentía distinto. No es un bug, es el personaje ocupando su
+lugar — pero con 4 en vez de 1 había que ser más cuidadoso con dónde los
+poné para no encerrar el manantial; por eso quedaron repartidos en 3 lados
+en vez de amontonados, dejando siempre un camino libre para acercarse a
+cada uno.
+
+### Ajuste: diálogo corto tras el ataque + la abuela repite el apuro
+
+Dos cambios en `_play_post_battle_scene`:
+
+- Justo después de que todos los Extraños tiemblan (pero antes de
+  desbloquear el movimiento), ahora hay un diálogo cortito automático:
+  **Extraño**: "¡Agghh! Nunca vi un poder semejante." / **Abuela Catta**:
+  "Rápido, Ryan, hacia el sur." — recién después de eso arranca el bosque
+  libre.
+- `_on_abuela_interact()` ahora chequea `_abuela_following`: si ya pasó el
+  ataque (la abuela está siguiendo a Ryan), hablarle repite "Rápido,
+  Ryan, hacia el sur." en vez del saludo original de la Ceremonia — no
+  tendría sentido repetir esa presentación en ese punto de la historia.
+
+Probado con Godot real: la escena post-batalla llega a buen término
+(`movement_locked=false`, `abuela_following=true`) recién después de que
+ese diálogo corto se cierra, y hablarle a la abuela en modo seguimiento
+devuelve exactamente "Rápido, Ryan, hacia el sur." — más una captura real
+del cartel con la cara del Extraño ya asustada.

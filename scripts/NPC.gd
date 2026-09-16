@@ -59,13 +59,19 @@ func interact() -> void:
 	Dialogue.start_conversation(entries)
 
 
+var _walk_tween: Tween
+
 ## Desliza al personaje hasta target_pos (posicion global) en duration
-## segundos. Pensado para que un personaje "entre en escena" caminando.
+## segundos. Pensado para que un personaje "entre en escena" caminando (o
+## para que siga a otro personaje paso a paso). Si ya habia un desliz en
+## curso, lo corta -- evita que dos tweens compitan por la misma posicion.
 func walk_to(target_pos: Vector2, duration: float) -> void:
-	var tw := create_tween()
-	tw.tween_property(self, "global_position", target_pos, duration) \
+	if _walk_tween and _walk_tween.is_valid():
+		_walk_tween.kill()
+	_walk_tween = create_tween()
+	_walk_tween.tween_property(self, "global_position", target_pos, duration) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await tw.finished
+	await _walk_tween.finished
 
 
 ## Cambia el sprite en el momento (por ejemplo, a una expresion distinta

@@ -13,6 +13,12 @@ var facing := Vector2.DOWN
 ## sin depender de que haya un dialogo abierto.
 var movement_locked := false
 
+## Se emite cada vez que termina un paso (tile a tile). Lo usa Forest.gd
+## para que un personaje (la abuela) pueda seguir a Ryan un paso atras.
+signal move_finished(from_pos: Vector2, to_pos: Vector2)
+
+var _move_start := Vector2.ZERO
+
 
 func _physics_process(_delta: float) -> void:
 	if Dialogue.is_active or movement_locked:
@@ -59,15 +65,17 @@ func _try_move(dir: Vector2) -> void:
 		return
 
 	is_moving = true
+	_move_start = position
 	var target := position + motion
 
 	move_tween = create_tween()
 	move_tween.tween_property(self, "position", target, MOVE_DURATION)
-	move_tween.finished.connect(_on_move_finished)
+	move_tween.finished.connect(_on_move_finished.bind(target))
 
 
-func _on_move_finished() -> void:
+func _on_move_finished(target: Vector2) -> void:
 	is_moving = false
+	move_finished.emit(_move_start, target)
 
 
 func _interact() -> void:
