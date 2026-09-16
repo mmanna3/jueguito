@@ -13,6 +13,9 @@ const TREE_TRUNK := Vector2i(6, 0)
 const PINE_TRUNK := Vector2i(7, 0)
 const ROCK := Vector2i(8, 0)
 const BUSH_DECO := Vector2i(9, 0)
+const WATER_EDGE_TOP := Vector2i(10, 0)
+const WATER_EDGE_MID := Vector2i(11, 0)
+const WATER_EDGE_BOTTOM := Vector2i(12, 0)
 
 const OBSTACLE_VARIETY := [HEDGE, TREE_TRUNK, PINE_TRUNK]
 
@@ -38,9 +41,15 @@ func _build_map() -> void:
 		for x in MAP_W:
 			ground.set_cell(Vector2i(x, y), 0, GRASS)
 
-	# agua a la izquierda (el resto de los bordes van en la capa de decoracion)
-	for y in MAP_H:
-		ground.set_cell(Vector2i(0, y), 0, WATER)
+	# agua a la izquierda, con orilla (las piezas de la laguna dan el borde).
+	# Van en "Decoration": son siluetas con esquinas transparentes, y el
+	# pasto de "Ground" (ya pintado arriba) tiene que verse por ahi, no el
+	# fondo gris de la ventana. Las filas 0-1 y H-2/H-1 quedan tapadas por
+	# el bosque del borde igual.
+	decoration.set_cell(Vector2i(0, 2), 0, WATER_EDGE_TOP)
+	for y in range(3, MAP_H - 3):
+		decoration.set_cell(Vector2i(0, y), 0, WATER_EDGE_MID)
+	decoration.set_cell(Vector2i(0, MAP_H - 3), 0, WATER_EDGE_BOTTOM)
 
 	_paint_grass_variety()
 	_paint_path()
@@ -152,15 +161,27 @@ func _on_abuela_interact() -> void:
 		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
 			"text": "¿El agua… púrpura? Siempre me dijiste que no me acercara a los manantiales."},
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Y hice bien en decírtelo, hasta que tuvieras edad de entenderlo. Dicen los viejos relatos que nace donde los Cristales duermen bajo la tierra, y se lleva su color al despertar."},
+			"text": "Y hice bien en decírtelo, hasta que tuvieras edad de entenderlo."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Dicen los viejos relatos que nace donde los Cristales duermen bajo la tierra."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Y que se lleva su color al despertar."},
 		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
 			"text": "¿Cristales? Nunca vi ninguno."},
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Pocos los ven, y menos los que viven para contarlo con la mente entera. Pero el agua que ellos tiñen sí se puede tocar. Cura heridas que ni el tiempo cierra, y calma fiebres que ningún médico entiende."},
+			"text": "Pocos los ven, y menos los que viven para contarlo con la mente entera."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Pero el agua que ellos tiñen sí se puede tocar."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Cura heridas que ni el tiempo cierra, y calma fiebres que ningún médico entiende."},
 		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
 			"text": "¿Entonces por qué nadie la usa?"},
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Porque toda cura tiene su precio. Bebida sin cuidado, la misma agua que sana también reclama algo a cambio. Por eso los antiguos la trataban con respeto, no con codicia."},
+			"text": "Porque toda cura tiene su precio."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Bebida sin cuidado, la misma agua que sana también reclama algo a cambio."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Por eso los antiguos la trataban con respeto, no con codicia."},
 		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
 			"text": "Tendré cuidado, abuela. Lo prometo."},
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,

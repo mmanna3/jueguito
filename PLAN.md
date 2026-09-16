@@ -382,3 +382,81 @@ usa una sola `TileMapLayer`, así que probablemente tenga el mismo problema
 de fondo gris en sus árboles si se lo mira de cerca — no se tocó porque el
 pedido de esta vuelta fue específicamente sobre la escena del bosque. Si
 se quiere, se aplica el mismo fix de dos capas ahí.
+
+## Etapa 3c: rediseño del cuadro de diálogo (2026-09-16)
+
+El usuario reportó que la tipografía y el estilo del cuadro de diálogo se
+veían mal ("de mala calidad"), a pesar de haber achicado el tamaño de
+fuente en la Etapa 3b. Causa real, no era solo "tamaño":
+
+- El proyecto usa la fuente default de Godot (una fuente de UI genérica,
+  no pensada para pixel art) **combinada con el filtro "Nearest" global**
+  que el proyecto necesita para que los sprites se vean nítidos. Ese
+  filtro aplicado a una fuente suave/antialiaseada la deja con bordes
+  toscos y da esa sensación de "mala calidad" / letras gigantes, más allá
+  del tamaño en puntos configurado.
+- El cuadro en sí era un `Panel` default de Godot: un rectángulo gris
+  liso, sin borde ni identidad visual propia.
+
+Qué se cambió:
+
+- **Tipografías nuevas** (descargadas de Google Fonts, licencia OFL,
+  quedaron en `assets/fonts/` con su licencia): **VT323** para el cuerpo
+  del texto (legible, minúsculas normales, look de terminal retro) y
+  **Silkscreen Bold** para el nombre de quien habla (mayúsculas, peso bold
+  real —no un truco de tamaño—, en dorado `#FFD75E`). Ambas soportan
+  acentos y signos en español (¿¡áéíóúñ), verificado antes de usarlas.
+- **Filtro de texturas en Linear solo para el diálogo**: se seteó
+  `texture_filter = Linear` en el `Control` raíz del `DialogueBox` (se
+  hereda a todos sus hijos), así el texto se renderiza suave aunque el
+  resto del juego (sprites, tiles) siga en Nearest para mantener el pixel
+  art nítido.
+- **El `Panel` pasó a tener un `StyleBoxFlat` propio**: fondo violeta muy
+  oscuro semi-transparente, borde de 2px en lavanda claro, esquinas
+  redondeadas (6px) y una sombra suave — deja de ser un rectángulo gris
+  genérico. El marco del retrato tiene su propio `StyleBoxFlat` a juego.
+- **Ajuste de layout**: el panel creció un poco de alto para que las
+  líneas más largas del guión entren sin desbordarse (se detectó por
+  captura de pantalla que una línea larga se salía del cuadro), se
+  activó `clip_contents` como resguardo, y se dividieron 3 líneas
+  demasiado largas del guión de la abuela en "beats" más cortos (más
+  auténtico al género además de más seguro).
+- Cuando un NPC no tiene retrato (los del pueblo, por ahora), el texto
+  ahora ocupa todo el ancho disponible en vez de dejar un hueco vacío a
+  la izquierda.
+
+Probado con Godot real: se imprimieron las 16 líneas del guión del bosque
+con su longitud en caracteres para confirmar que ninguna es más larga que
+la más larga ya verificada por captura (110 caracteres, entra en 3
+renglones), y se sacaron capturas del diálogo en el bosque (con retrato) y
+en el pueblo (sin retrato) para confirmar el resultado visual.
+
+**Ajuste posterior**: el nombre quedó demasiado grande y en negrita para
+el gusto del usuario. Se cambió `Silkscreen-Bold.ttf` por
+`Silkscreen-Regular.ttf` (misma familia, sin negrita) y el tamaño bajó de
+16 a 11, retocando además los márgenes verticales para que no quede un
+hueco entre el nombre y el texto.
+
+**Cancelar diálogo con ESC**: `DialogueBox._unhandled_input` ahora también
+escucha `ui_cancel` (Escape, acción default de Godot) y cierra la
+conversación de inmediato sin pasar por las líneas que falten. Probado por
+código: se abre el diálogo, se avanza un par de líneas, se simula ESC, se
+confirma que `Dialogue.is_active` pasa a `false` y que el jugador puede
+volver a moverse.
+
+**Orilla en el agua del borde izquierdo**: el agua del límite izquierdo
+del mapa era un tile plano (un rectángulo violeta liso), que no se leía
+como agua. Se reutilizaron 3 piezas del gráfico de la laguna ("manantial")
+del centro del mapa —esquina superior, borde recto, esquina inferior, cada
+una con orilla gris-lavanda— para armar una costa vertical a lo largo de
+todo el borde izquierdo. Quedaron como tiles nuevos (índices 10-12 de
+`forest_sheet.png`: `WATER_EDGE_TOP/MID/BOTTOM`), con la misma colisión
+que el resto de los obstáculos.
+
+**Fix inmediato**: esas piezas de orilla son siluetas con esquinas
+transparentes (igual que los árboles), y se habían pintado en `Ground`
+—que no tiene nada debajo— así que esas esquinas dejaban ver el fondo gris
+de la ventana en vez del pasto. Se pasaron a `Decoration` (con `Ground`
+en pasto por debajo, como ya se hace con árboles/rocas/arbustos), así el
+pasto se ve por las esquinas y la orilla se funde con el bosque en vez de
+tener un borde gris/negro.

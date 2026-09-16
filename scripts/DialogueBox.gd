@@ -9,7 +9,11 @@ var _index := 0
 @onready var root: Control = $Root
 @onready var name_label: Label = $Root/Panel/NameLabel
 @onready var body_label: Label = $Root/Panel/BodyLabel
-@onready var portrait_rect: TextureRect = $Root/Panel/Portrait
+@onready var portrait_rect: TextureRect = $Root/Panel/PortraitFrame/Portrait
+@onready var portrait_frame: Panel = $Root/Panel/PortraitFrame
+
+const TEXT_LEFT_WITH_PORTRAIT := 66.0
+const TEXT_LEFT_NO_PORTRAIT := 12.0
 
 
 func start_conversation(entries: Array) -> void:
@@ -27,6 +31,10 @@ func start_conversation(entries: Array) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_active:
 		return
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_close()
+		return
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		_advance()
@@ -40,9 +48,13 @@ func _show_current_entry() -> void:
 	var tex = entry.get("portrait")
 	if tex:
 		portrait_rect.texture = tex
-		portrait_rect.visible = true
+		portrait_frame.visible = true
+		name_label.offset_left = TEXT_LEFT_WITH_PORTRAIT
+		body_label.offset_left = TEXT_LEFT_WITH_PORTRAIT
 	else:
-		portrait_rect.visible = false
+		portrait_frame.visible = false
+		name_label.offset_left = TEXT_LEFT_NO_PORTRAIT
+		body_label.offset_left = TEXT_LEFT_NO_PORTRAIT
 
 
 func _advance() -> void:
