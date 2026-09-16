@@ -328,3 +328,57 @@ una con su retrato), definida directamente en `Forest.gd`.
   corresponde).
 - Captura de pantalla real confirmando el bosque violeta y el cartel de
   diálogo con retrato en pantalla.
+
+## Etapa 3b: mapa 8x más grande, prolijidad visual y ajustes de UI (2026-09-16)
+
+Feedback del usuario tras ver la Etapa 3, y lo que se cambió:
+
+- **Bug de fondo gris en árboles/plantas — causa real y fix**: los tiles de
+  árbol/arbusto/roca son siluetas con transparencia (no ocupan el tile
+  16x16 completo), y `Forest.tscn` los pintaba en la misma (única)
+  `TileMapLayer` que el pasto, tapándolo. La transparencia dejaba ver el
+  color de fondo de la ventana en vez del pasto. Se resolvió con **dos
+  capas**: `Ground` (pasto/camino/agua, siempre sólido) y `Decoration`
+  (árboles/arbustos/rocas encima, con transparencia — el pasto de `Ground`
+  se ve por los bordes). Mismo `TileSet` compartido por ambas capas.
+- **Mapa 8 veces más grande**: de 15x10 (150 tiles) a 40x30 (1200 tiles).
+  Cámara y límites actualizados acordes (antes 240x160, ahora 640x480);
+  como `Player.tscn` se comparte con `Town.tscn`, el límite de cámara se
+  sobrescribe puntualmente en la instancia de `Forest.tscn`.
+- **Bordes mixtos** (en vez de un hedge uniforme en las 4 puntas): agua a
+  la izquierda, roca a la derecha, bosque (2 tiles de espesor) arriba y
+  abajo.
+- **Grupos de árboles infranqueables**: 6 "arboledas" de 6-7 tiles cada
+  una, en formas irregulares (no rectángulos), mezclando arbusto/árbol
+  redondo/pino para que no se vean repetitivas. Se verificó por código que
+  bloquean el paso.
+- **Tiles nuevos** (todos en `assets/tileset_forest/forest_sheet.png`):
+  pasto con sombra (variante más oscura, para parches de "hierba
+  sombreada"), pasto con flores (dibujadas a mano, no recoloreadas —
+  recolorear el tile original de Kenney le daba un color feo y dejaba un
+  artefacto blanco), pino con tronco (mismo truco que el árbol redondo:
+  copa recortada + tronco a mano), roca gris (dibujada a mano con
+  ImageMagick, ya que los tiles de roca de Kenney son piezas de un
+  auto-tile conectado y no se pueden usar sueltas).
+- **Laguna con forma irregular**: se dejó de usar un bloque cuadrado de
+  agua. Ahora es el gráfico de laguna redonda de 3x3 tiles de Kenney
+  (`assets/tileset_forest/pond.png`), recoloreado con reemplazo de color
+  puntual (no hue-shift global, que daba un borde verde feo) — cuerpo de
+  agua púrpura + orilla gris-lavanda. Se usa como sprite aparte (no como
+  tile repetible) porque es una pieza única.
+- **Diálogo — tipografía**: el nombre del que habla ahora es más grande
+  (15px) y en color dorado (`#FFD75E`) para que resalte por sobre el texto
+  (no hay una fuente bold cargada en el proyecto, así que la jerarquía se
+  logra con tamaño + color en vez de negrita real). El texto del cuerpo se
+  achicó de 12px a 9px.
+
+Todo probado con Godot real: self-test que aleja la cámara para capturar
+el mapa completo, verifica colisión contra una de las arboledas nuevas, y
+dispara el diálogo para confirmar la tipografía — más una captura visual
+de cada cosa.
+
+**Pendiente / no incluido en este pase**: `Town.tscn` (el pueblo) todavía
+usa una sola `TileMapLayer`, así que probablemente tenga el mismo problema
+de fondo gris en sus árboles si se lo mira de cerca — no se tocó porque el
+pedido de esta vuelta fue específicamente sobre la escena del bosque. Si
+se quiere, se aplica el mismo fix de dos capas ahí.
