@@ -15,6 +15,14 @@ var _index := 0
 const TEXT_LEFT_WITH_PORTRAIT := 66.0
 const TEXT_LEFT_NO_PORTRAIT := 12.0
 
+const BODY_TOP_WITH_NAME := 24.0
+const BODY_TOP_NO_NAME := 8.0
+
+## Se emite cuando el diálogo se cierra (termina solo o se cancela con ESC).
+## Sirve para que una escena espere a que una conversación termine antes de
+## seguir con lo próximo (`await Dialogue.dialogue_closed`).
+signal dialogue_closed
+
 
 func start_conversation(entries: Array) -> void:
 	if entries.is_empty():
@@ -42,8 +50,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _show_current_entry() -> void:
 	var entry: Dictionary = _entries[_index]
-	name_label.text = entry.get("speaker", "")
+	var speaker: String = entry.get("speaker", "")
 	body_label.text = entry.get("text", "")
+
+	if speaker.is_empty():
+		name_label.visible = false
+		body_label.offset_top = BODY_TOP_NO_NAME
+	else:
+		name_label.visible = true
+		name_label.text = speaker
+		body_label.offset_top = BODY_TOP_WITH_NAME
 
 	var tex = entry.get("portrait")
 	if tex:
@@ -68,3 +84,4 @@ func _advance() -> void:
 func _close() -> void:
 	is_active = false
 	root.visible = false
+	dialogue_closed.emit()

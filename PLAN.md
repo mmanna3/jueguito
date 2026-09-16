@@ -460,3 +460,95 @@ de la ventana en vez del pasto. Se pasaron a `Decoration` (con `Ground`
 en pasto por debajo, como ya se hace con árboles/rocas/arbustos), así el
 pasto se ve por las esquinas y la orilla se funde con el bosque en vez de
 tener un borde gris/negro.
+
+## Etapa 4: el manantial responde y aparece el Extraño (2026-09-16)
+
+Primer gancho de historia real, con una cutscene disparada por el jugador.
+
+### Diseño
+
+1. **El manantial ("Agua Púrpura") ahora es interactivo.** Parándose al
+   lado y apretando `ui_accept`, muestra un texto sin nombre de hablante
+   (estilo narración): *"El Agua Púrpura brota de la tierra calmada, como
+   si escondiera el secreto de un pasado olvidado."*
+2. **Gateo narrativo**: la primera vez que se interactúa con el agua
+   *después* de haber hablado con la Abuela Catta, se dispara la escena
+   del Extraño. Si se interactúa con el agua antes de hablar con la
+   abuela, o después de que la escena ya ocurrió una vez, solo se repite
+   el texto — no pasa nada más (a propósito, tal como se pidió).
+3. **Aviso al jugador** (antes de la escena, en vez de música — se puede
+   sumar sonido más adelante sin tocar esta lógica): un signo de
+   exclamación naranja aparece arriba de Ryan con un pequeño rebote, *y*
+   la cámara tiembla brevemente. Se combinaron las dos ideas que
+   propusiste porque son baratas de implementar y se refuerzan entre sí.
+4. **El Extraño**: personaje nuevo, dibujado a mano igual que Ryan y la
+   Abuela (encapuchado, ojos y un emblema en el pecho violeta brillante —
+   pensado para leerse como amenazante/misterioso). Aparece invisible,
+   ubicado fuera de los márgenes del mapa, y "camina" (interpola su
+   posición con un `Tween`, igual que se desliza el jugador tile a tile,
+   pero en una sola animación larga) hasta pararse cerca de Ryan y la
+   Abuela.
+5. **Mientras el Extraño camina, el jugador no se puede mover.** Se agregó
+   `Player.movement_locked` (además de `Dialogue.is_active`) para congelar
+   input durante cutscenes que no son, en sí mismas, un diálogo.
+6. Termina la escena con el diálogo de los 3 (tal como lo escribiste,
+   palabra por palabra) y ahí queda — nada más pasa por ahora, como
+   pediste, a la espera del sistema de combate.
+
+### Cambios técnicos
+
+- **Grupo de interacción generalizado**: `NPC.gd` y el nuevo
+  `WaterSpring.gd` (script chico para el manantial) se anotan en el grupo
+  `"interactable"` (antes era `"npc"`, mal nombre para algo que no es una
+  persona). `Player.gd` ahora busca en ese grupo genérico y llama
+  `.interact()` en lo que encuentre — el manantial le cede el control a
+  `Forest.gd` exactamente igual que hace la Abuela con la conversación a
+  medida (señal `interact_requested`).
+- **`NPC.gd` ganó `walk_to(target_pos, duration)`**: desliza al personaje
+  con un `Tween`, `await`-eable, para que una escena pueda hacer "entrar
+  caminando" a un personaje sin jugador de por medio.
+- **`DialogueBox` ganó una señal `dialogue_closed`**, así `Forest.gd` puede
+  encadenar pasos de una cutscene con `await Dialogue.dialogue_closed` en
+  vez de sondear `is_active`. También aprendió a mostrar una línea sin
+  nombre de hablante (oculta el `NameLabel` y corre el texto hacia arriba)
+  para el texto de narración del manantial.
+- Toda la orquestación de la escena (bloquear/desbloquear al jugador, el
+  aviso, la caminata, el diálogo) vive en `Forest.gd`, no en los
+  personajes — mantiene a `NPC.gd`/`WaterSpring.gd` genéricos y
+  reutilizables.
+
+### Probado con Godot real
+
+Self-test completo simulando: interactuar con el agua antes de hablar con
+la abuela (solo texto, sin cutscene) → hablar con la abuela (16 líneas) →
+interactuar con el agua de nuevo (dispara todo: bloqueo de movimiento,
+aviso, el Extraño camina hasta la posición exacta esperada, se abre el
+diálogo de los 3 con el hablante/retrato correcto en cada línea, se
+desbloquea el movimiento al cerrar) → interactuar con el agua una tercera
+vez (no se repite nada). Más tres capturas reales: el signo de
+exclamación, el Extraño a mitad de camino, y el diálogo de los 3 ya
+reunidos junto al manantial.
+
+### Bug reportado por el usuario: interactuar con el manantial no hacía nada
+
+Jugando de verdad (no con los self-tests, que llamaban `.interact()`
+directo salteándose el chequeo de distancia real), el usuario reportó que
+pararse al lado del manantial y apretar Enter no pasaba nada.
+
+**Causa**: `Player._interact()` calculaba si el interactuable estaba "cerca"
+comparando la celda de enfrente contra un único punto (`thing.global_position`)
+con una tolerancia de 4px — funciona para un NPC de 16x16, porque el
+jugador siempre puede pararse justo a un tile de su centro. Pero el
+manantial mide 48x48 (3x3 tiles): su centro nunca cae a un tile exacto de
+ninguna celda donde el jugador pueda pararse (esas celdas están *adentro*
+del propio manantial, bloqueadas por su colisión). No existía ninguna
+posición real desde la que el chequeo diera "true".
+
+**Fix**: `Player._interact()` ahora chequea si la celda de enfrente cae
+dentro de un **área** (`Rect2`) centrada en el interactuable, no contra un
+punto. Cada interactuable expone `@export var interact_size` (`NPC.gd`
+usa 16x16 por default, `WaterSpring.gd` usa 48x48, el tamaño real del
+manantial). Probado con Godot real simulando al jugador parado y encarando
+el manantial desde las 4 direcciones (no llamando `.interact()` a mano) —
+las 4 funcionan — y también que la abuela y los NPCs del pueblo (16x16)
+lo siguen funcionando igual que antes.

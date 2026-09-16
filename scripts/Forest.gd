@@ -21,35 +21,38 @@ const OBSTACLE_VARIETY := [HEDGE, TREE_TRUNK, PINE_TRUNK]
 
 const RYAN_PORTRAIT := preload("res://assets/characters_custom/ryan_portrait.png")
 const ABUELA_PORTRAIT := preload("res://assets/characters_custom/abuela_portrait.png")
+const STRANGER_PORTRAIT := preload("res://assets/characters_custom/stranger_portrait.png")
+
+const WATER_FLAVOR_TEXT := "El Agua Púrpura brota de la tierra calmada, como si escondiera el secreto de un pasado olvidado."
+
+const STRANGER_ARRIVAL_POS := Vector2(392, 168)
 
 ## "Ground" siempre tiene un terreno solido (pasto/camino/agua) debajo de todo.
-## "Decoration" tiene los obstaculos (arboles, arbustos, rocas), que son
-## siluetas con transparencia -- si se pintaran solos en una sola capa, esa
-## transparencia dejaria ver el fondo gris de la ventana en vez del pasto.
+## "Decoration" tiene los obstaculos (arboles, arbustos, rocas, orillas), que
+## son siluetas con transparencia -- si se pintaran solos en una sola capa,
+## esa transparencia dejaria ver el fondo gris de la ventana en vez del
+## pasto.
 @onready var ground: TileMapLayer = $Ground
 @onready var decoration: TileMapLayer = $Decoration
 @onready var abuela: StaticBody2D = $NPCs/AbuelaCatta
+@onready var stranger: StaticBody2D = $NPCs/Stranger
+@onready var pond: StaticBody2D = $Pond
+@onready var player: CharacterBody2D = $Player
+
+var _talked_to_abuela := false
+var _water_event_played := false
 
 
 func _ready() -> void:
 	_build_map()
 	abuela.interact_requested.connect(_on_abuela_interact)
+	pond.interact_requested.connect(_on_pond_interact)
 
 
 func _build_map() -> void:
 	for y in MAP_H:
 		for x in MAP_W:
 			ground.set_cell(Vector2i(x, y), 0, GRASS)
-
-	# agua a la izquierda, con orilla (las piezas de la laguna dan el borde).
-	# Van en "Decoration": son siluetas con esquinas transparentes, y el
-	# pasto de "Ground" (ya pintado arriba) tiene que verse por ahi, no el
-	# fondo gris de la ventana. Las filas 0-1 y H-2/H-1 quedan tapadas por
-	# el bosque del borde igual.
-	decoration.set_cell(Vector2i(0, 2), 0, WATER_EDGE_TOP)
-	for y in range(3, MAP_H - 3):
-		decoration.set_cell(Vector2i(0, y), 0, WATER_EDGE_MID)
-	decoration.set_cell(Vector2i(0, MAP_H - 3), 0, WATER_EDGE_BOTTOM)
 
 	_paint_grass_variety()
 	_paint_path()
@@ -67,6 +70,14 @@ func _paint_border() -> void:
 		decoration.set_cell(Vector2i(x, MAP_H - 1), 0, HEDGE)
 	for y in MAP_H:
 		decoration.set_cell(Vector2i(MAP_W - 1, y), 0, ROCK)
+
+	# agua a la izquierda, con orilla (las piezas de la laguna dan el borde).
+	# Van en "Decoration": son siluetas con esquinas transparentes, y el
+	# pasto de "Ground" (ya pintado) tiene que verse por ahi.
+	decoration.set_cell(Vector2i(0, 2), 0, WATER_EDGE_TOP)
+	for y in range(3, MAP_H - 3):
+		decoration.set_cell(Vector2i(0, y), 0, WATER_EDGE_MID)
+	decoration.set_cell(Vector2i(0, MAP_H - 3), 0, WATER_EDGE_BOTTOM)
 
 
 func _paint_grass_variety() -> void:
@@ -187,3 +198,87 @@ func _on_abuela_interact() -> void:
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
 			"text": "Lo sé. Por eso te lo cuento a vos y no a otro. Ahora andá, que el bosque se pone hablador cuando cae la tarde."},
 	])
+	await Dialogue.dialogue_closed
+	_talked_to_abuela = true
+
+
+func _on_pond_interact() -> void:
+	Dialogue.start_conversation([
+		{"speaker": "", "portrait": null, "text": WATER_FLAVOR_TEXT},
+	])
+	await Dialogue.dialogue_closed
+
+	if not _talked_to_abuela or _water_event_played:
+		return
+
+	_water_event_played = true
+	await _play_stranger_scene()
+
+
+func _play_stranger_scene() -> void:
+	player.movement_locked = true
+
+	await _attention_grabber()
+	await get_tree().create_timer(0.5).timeout
+
+	stranger.visible = true
+	await stranger.walk_to(STRANGER_ARRIVAL_POS, 1.4)
+
+	Dialogue.start_conversation([
+		{"speaker": "Extraño", "portrait": STRANGER_PORTRAIT,
+			"text": "El planeta es nuestro. Ríndanse o tendrán el mismo fin que los demás."},
+		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
+			"text": "¿Qué?"},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Tranquilo, Ryan. Haceles caso."},
+		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
+			"text": "Mirá si voy a rendirme con estos bobos."},
+		{"speaker": "Extraño", "portrait": STRANGER_PORTRAIT,
+			"text": "Qué mal me caen los intentos de héroe."},
+	])
+	await Dialogue.dialogue_closed
+
+	player.movement_locked = false
+
+
+## Llama la atencion del jugador: un "!" arriba de Ryan y un temblor corto
+## de camara. En el futuro esto lo va a reemplazar (o acompañar) un sonido.
+func _attention_grabber() -> void:
+	var cam := player.get_node("Camera2D") as Camera2D
+	_spawn_exclamation()
+	await _screen_shake(cam, 0.35, 3.0)
+
+
+func _spawn_exclamation() -> void:
+	var label := Label.new()
+	label.text = "!"
+	label.z_index = 100
+	label.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	label.add_theme_font_size_override("font_size", 28)
+	label.add_theme_color_override("font_color", Color(1, 0.42, 0.29))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	add_child(label)
+	label.pivot_offset = Vector2(6, 14)
+	label.global_position = player.global_position + Vector2(-6, -30)
+	label.scale = Vector2(0.1, 0.1)
+	label.modulate.a = 0.0
+
+	var tw := create_tween()
+	tw.tween_property(label, "scale", Vector2(1, 1), 0.15) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(label, "modulate:a", 1.0, 0.1)
+	tw.tween_interval(0.5)
+	tw.tween_property(label, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(label.queue_free)
+
+
+func _screen_shake(cam: Camera2D, duration: float, strength: float) -> void:
+	var elapsed := 0.0
+	while elapsed < duration:
+		var pct := 1.0 - (elapsed / duration)
+		cam.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * strength * pct
+		await get_tree().create_timer(0.03).timeout
+		elapsed += 0.03
+	cam.offset = Vector2.ZERO

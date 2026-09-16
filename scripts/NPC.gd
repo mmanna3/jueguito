@@ -20,6 +20,9 @@ extends StaticBody2D
 ## hablantes, por ejemplo) en vez del diálogo genérico de un solo hablante.
 signal interact_requested
 
+## Tamaño del area que Player.gd usa para saber si lo esta encarando.
+@export var interact_size := Vector2(16, 16)
+
 const CHAR_SHEET := preload("res://assets/characters/roguelikeChar_transparent.png")
 const TILE_PITCH := 17
 const TILE_SIZE := 16
@@ -28,7 +31,7 @@ const TILE_SIZE := 16
 
 
 func _ready() -> void:
-	add_to_group("npc")
+	add_to_group("interactable")
 
 	if custom_texture:
 		sprite.texture = custom_texture
@@ -54,3 +57,12 @@ func interact() -> void:
 	for line in dialogue_lines:
 		entries.append({"speaker": npc_name, "portrait": portrait, "text": line})
 	Dialogue.start_conversation(entries)
+
+
+## Desliza al personaje hasta target_pos (posicion global) en duration
+## segundos. Pensado para que un personaje "entre en escena" caminando.
+func walk_to(target_pos: Vector2, duration: float) -> void:
+	var tw := create_tween()
+	tw.tween_property(self, "global_position", target_pos, duration) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await tw.finished

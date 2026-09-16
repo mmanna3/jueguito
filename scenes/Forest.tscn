@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/Forest.gd" id="1_script"]
 [ext_resource type="TileSet" path="res://assets/tileset_forest/forest_tileset.tres" id="2_tileset"]
@@ -7,6 +7,9 @@
 [ext_resource type="Texture2D" path="res://assets/characters_custom/abuela.png" id="5_abuela_tex"]
 [ext_resource type="Texture2D" path="res://assets/characters_custom/abuela_portrait.png" id="6_abuela_portrait"]
 [ext_resource type="Texture2D" path="res://assets/tileset_forest/pond.png" id="7_pond_tex"]
+[ext_resource type="Script" path="res://scripts/WaterSpring.gd" id="8_waterspring"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/stranger.png" id="9_stranger_tex"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/stranger_portrait.png" id="10_stranger_portrait"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pond"]
 size = Vector2(48, 48)
@@ -24,6 +27,7 @@ tile_set = ExtResource("2_tileset")
 position = Vector2(360, 168)
 collision_layer = 1
 collision_mask = 1
+script = ExtResource("8_waterspring")
 
 [node name="Sprite2D" type="Sprite2D" parent="Pond"]
 texture = ExtResource("7_pond_tex")
@@ -38,6 +42,13 @@ position = Vector2(328, 168)
 custom_texture = ExtResource("5_abuela_tex")
 portrait = ExtResource("6_abuela_portrait")
 npc_name = "Abuela Catta"
+
+[node name="Stranger" parent="NPCs" instance=ExtResource("4_npc")]
+visible = false
+position = Vector2(360, -40)
+custom_texture = ExtResource("9_stranger_tex")
+portrait = ExtResource("10_stranger_portrait")
+npc_name = "Extraño"
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 position = Vector2(88, 248)

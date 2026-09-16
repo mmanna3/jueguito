@@ -2,15 +2,20 @@ extends CharacterBody2D
 
 const TILE_SIZE := 16
 const MOVE_DURATION := 0.15
-const INTERACT_DISTANCE := 4.0
+const DEFAULT_INTERACT_SIZE := Vector2(16, 16)
+const INTERACT_PADDING := 2.0
 
 var is_moving := false
 var move_tween: Tween
 var facing := Vector2.DOWN
 
+## Congela al jugador durante cutscenes (mientras camina un NPC, etc.),
+## sin depender de que haya un dialogo abierto.
+var movement_locked := false
+
 
 func _physics_process(_delta: float) -> void:
-	if Dialogue.is_active:
+	if Dialogue.is_active or movement_locked:
 		return
 
 	if is_moving:
@@ -27,7 +32,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# ser leido dos veces en el mismo frame por Player y por Dialogue
 	# (eso causaba que el dialogo se reabriera solo al llegar a la ultima
 	# linea, en vez de cerrarse).
-	if Dialogue.is_active:
+	if Dialogue.is_active or movement_locked:
 		return
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
@@ -66,8 +71,14 @@ func _on_move_finished() -> void:
 
 
 func _interact() -> void:
+	# Chequea si la celda de enfrente cae dentro del area del interactuable
+	# (no solo "cerca de su centro"): un NPC mide un tile, pero el
+	# manantial mide 3x3 tiles, y su centro nunca queda a un tile exacto de
+	# ninguna celda donde el jugador pueda pararse.
 	var target_pos := global_position + facing * TILE_SIZE
-	for npc in get_tree().get_nodes_in_group("npc"):
-		if npc.global_position.distance_to(target_pos) < INTERACT_DISTANCE:
-			npc.interact()
+	for thing in get_tree().get_nodes_in_group("interactable"):
+		var size: Vector2 = thing.interact_size if "interact_size" in thing else DEFAULT_INTERACT_SIZE
+		var area := Rect2(thing.global_position - size / 2.0, size).grow(INTERACT_PADDING)
+		if area.has_point(target_pos):
+			thing.interact()
 			return
