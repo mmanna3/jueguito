@@ -794,3 +794,70 @@ fundido y el cambio de escena → `ForestSouth` carga con Ryan y la abuela
 en la posición esperada → hablarle a la nave reproduce las 10 líneas en
 el orden y con el hablante/retrato correctos. Más dos capturas reales: el
 clarito con la nave a lo lejos, y el cartel de diálogo ya abierto.
+
+## Etapa 8: sin bloqueos falsos, y la emboscada final (2026-09-16)
+
+### 1. Los Extraños vencidos ya no bloquean el paso
+
+El reporte tenía sentido: alrededor del manantial había celdas bloqueadas
+que no deberían estarlo. Causa: los 4 Extraños derrotados seguían siendo
+obstáculos físicos, como si todavía fueran una amenaza activa — no tiene
+sentido narrativo que un enemigo vencido y tembloroso siga bloqueando el
+camino. `NPC.gd` ganó `set_solid(bool)` (activa/desactiva su
+`CollisionShape2D`); en el mismo loop donde ya se les cambiaba la cara y
+temblaban, ahora también se vuelven "atravesables" —siguen ahí, se les
+puede seguir hablando (eso no depende de la colisión física), pero no
+estorban para caminar. El manantial sigue bloqueando como corresponde,
+es agua de verdad. Probado con Godot real: `test_move` hacia la celda de
+cada uno de los 4 da `false` (no bloquea) y hacia el manantial sigue
+dando `true`.
+
+### 2. La emboscada final y la fuga en la nave
+
+Al terminar la conversación de la nave (los 10 renglones sobre la
+Rebelión, Cocco, Paltiv y Neurolick), se dispara automáticamente
+`_play_ambush_scene()` en `ForestSouth.gd`:
+
+1. Aparecen 10 Extraños más (`Ambush1`...`Ambush10`, mismo arte genérico,
+   repartidos por el claro sin pisar la nave ni el sendero) — de golpe,
+   sin caminata de entrada esta vez, porque la escena es de emergencia
+   ("Ahora vas a ver, vieja" no da tiempo a una llegada lenta).
+2. Diálogo: **Extraño**: "Ahora vas a ver, vieja." / **Abuela Catta**:
+   "Ryan, no hay más tiempo."
+3. Línea de narrador (mismo estilo sin nombre que ya usábamos): "Abuela
+   Catta empuja a Ryan dentro de la nave."
+4. Tiembla la cámara, Ryan desaparece (`player.visible = false` +
+   `movement_locked = true` — para siempre, no hay nada más que hacer
+   después de esto) y la abuela se queda parada sola, encarando a los 10.
+5. La nave se desliza hacia arriba y se va del mapa (`Tween` sobre su
+   posición, 1.1s, aceleración de despegue) y desaparece.
+
+Nada más pasa después — como en los episodios anteriores, queda ahí a la
+espera de lo que sigue. Probado con Godot real: los 10 quedan visibles,
+`player.visible=false`, `movement_locked=true`, la nave termina
+exactamente en la posición esperada tras el despegue y queda invisible.
+Más una captura real del momento con los 10 Extraños rodeando el claro.
+
+## Etapa 9: pausa antes de la emboscada, y pantalla de capítulo (2026-09-16)
+
+### 1. Pausa (temblor) antes de que hable el Extraño
+
+En `_play_ambush_scene()`, apenas aparecen los 10 Extraños, ahora hay un
+temblor corto (0.3s) antes de abrir el diálogo — el mismo recurso que ya
+usábamos como "aviso" en otras escenas, reutilizado acá como pausa
+dramática previa a que hable.
+
+### 2. Pantalla de capítulo bloqueante al final
+
+Después de que la nave se va del mapa, `_show_chapter_screen()` funde a
+negro (reusando el autoload `Transition`) y deja un cartel fijo:
+**"Capítulo 1: La búsqueda"**, en dorado, centrado, con la tipografía
+`Silkscreen-Bold`. No hay manera de sacarlo — no es una animación que
+termina sola, es el estado final: `player.movement_locked` ya quedó en
+`true` desde el paso anterior (para siempre, no se vuelve a desbloquear),
+así que no queda ninguna acción disponible. Primer intento con
+`font_size = 22` se salía de la pantalla (el texto es largo para los 320px
+de ancho base); se ajustó a `14`, confirmado por captura que entra
+completo y centrado.
+
+Probado con Godot real, con captura de pantalla real del cartel final.

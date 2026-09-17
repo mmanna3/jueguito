@@ -15,14 +15,24 @@ const BUSH_DECO := Vector2i(9, 0)
 
 const RYAN_PORTRAIT := preload("res://assets/characters_custom/ryan_portrait.png")
 const ABUELA_PORTRAIT := preload("res://assets/characters_custom/abuela_portrait.png")
+const STRANGER_PORTRAIT := preload("res://assets/characters_custom/stranger_portrait.png")
+const TITLE_FONT := preload("res://assets/fonts/Silkscreen-Bold.ttf")
 
 const SHIP_POS := Vector2(168, 120)
+const SHIP_ESCAPE_OFFSET := Vector2(0, -260)
 
 @onready var ground: TileMapLayer = $Ground
 @onready var decoration: TileMapLayer = $Decoration
 @onready var abuela: StaticBody2D = $NPCs/AbuelaCatta
 @onready var ship: StaticBody2D = $Ship
 @onready var player: CharacterBody2D = $Player
+
+@onready var ambush_strangers: Array = [
+	$NPCs/Ambush1, $NPCs/Ambush2, $NPCs/Ambush3, $NPCs/Ambush4, $NPCs/Ambush5,
+	$NPCs/Ambush6, $NPCs/Ambush7, $NPCs/Ambush8, $NPCs/Ambush9, $NPCs/Ambush10,
+]
+
+var _ship_event_played := false
 
 
 func _ready() -> void:
@@ -35,6 +45,7 @@ func _ready() -> void:
 		player.movement_locked = true
 		await Transition.fade_in()
 		player.movement_locked = false
+
 
 
 
@@ -80,6 +91,9 @@ func _build_map() -> void:
 
 
 func _on_ship_interact() -> void:
+	if _ship_event_played:
+		return
+
 	Dialogue.start_conversation([
 		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
 			"text": "Abuela, ¿Qué es esto entre los matorrales?"},
@@ -101,3 +115,76 @@ func _on_ship_interact() -> void:
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
 			"text": "No mentían cuando dijeron que Neurolick cayó. Puedo sentirlo."},
 	])
+	await Dialogue.dialogue_closed
+
+	_ship_event_played = true
+	await _play_ambush_scene()
+
+
+## Aparecen 10 Extraños, la abuela mete a Ryan adentro de la nave, y la
+## nave se va del mapa. Ahi termina la escena -- no hay mas contenido
+## despues de esto por ahora.
+func _play_ambush_scene() -> void:
+	var cam := player.get_node("Camera2D") as Camera2D
+
+	for s in ambush_strangers:
+		s.visible = true
+
+	# pausa antes de que hable el Extraño: un temblor corto, para que el
+	# jugador registre que aparecieron antes de que arranque el dialogo.
+	await _screen_shake(cam, 0.3, 3.0)
+
+	Dialogue.start_conversation([
+		{"speaker": "Extraño", "portrait": STRANGER_PORTRAIT, "text": "Ahora vas a ver, vieja."},
+		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT, "text": "Ryan, no hay más tiempo."},
+	])
+	await Dialogue.dialogue_closed
+
+	Dialogue.start_conversation([
+		{"speaker": "", "portrait": null, "text": "Abuela Catta empuja a Ryan dentro de la nave. Las luces y los motores se encienden."},
+	])
+	await Dialogue.dialogue_closed
+
+	await _screen_shake(cam, 0.4, 3.5)
+
+	player.movement_locked = true
+	player.visible = false
+
+	var tw := create_tween()
+	tw.tween_property(ship, "position", ship.position + SHIP_ESCAPE_OFFSET, 1.1) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	await tw.finished
+	ship.visible = false
+
+	await _show_chapter_screen("Capítulo 1: La búsqueda")
+
+
+func _screen_shake(cam: Camera2D, duration: float, strength: float) -> void:
+	var elapsed := 0.0
+	while elapsed < duration:
+		var pct := 1.0 - (elapsed / duration)
+		cam.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * strength * pct
+		await get_tree().create_timer(0.03).timeout
+		elapsed += 0.03
+	cam.offset = Vector2.ZERO
+
+
+## Funde a negro y deja un cartel de titulo de capitulo fijo en pantalla.
+## No hay forma de sacarlo -- es el final del contenido por ahora.
+func _show_chapter_screen(text: String) -> void:
+	await Transition.fade_out(0.6)
+
+	var layer := CanvasLayer.new()
+	layer.layer = 21
+	add_child(layer)
+
+	var label := Label.new()
+	label.text = text
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	label.add_theme_font_override("font", TITLE_FONT)
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(1, 0.844, 0.369, 1))
+	layer.add_child(label)

@@ -28,6 +28,7 @@ const TILE_PITCH := 17
 const TILE_SIZE := 16
 
 @onready var sprite: Sprite2D = $Sprite2D
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 
 func _ready() -> void:
@@ -78,6 +79,13 @@ func walk_to(target_pos: Vector2, duration: float) -> void:
 ## tras algo que le pasa en una cutscene).
 func set_sprite_texture(tex: Texture2D) -> void:
 	sprite.texture = tex
+
+
+## Prende/apaga la colision fisica del personaje (para NPCs ya vencidos,
+## que se quedan en el mapa como decorado interactuable pero no tienen por
+## que seguir bloqueando el paso).
+func set_solid(solid: bool) -> void:
+	collision_shape.disabled = not solid
 
 
 ## Sacude al personaje en el lugar (sin moverlo de verdad al terminar).

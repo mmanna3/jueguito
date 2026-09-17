@@ -208,9 +208,11 @@ func _on_abuela_interact() -> void:
 
 	Dialogue.start_conversation([
 		{"speaker": "Ryan", "portrait": RYAN_PORTRAIT,
-			"text": "¡Abuela! Todos en la Ceremonia te están buscando, no pensaba encontrarte en el Bosque."},
+			"text": "¡Abuela! ¿Qué hacés en el Bosque? Todos en la Ceremonia te están buscando."},
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
-			"text": "Lo sé, Ryan. A veces, los humanos me agobian y necesito la compañía de los árboles y el agua. Este bosque es anterior a La Era de los Cristales, ¿sabías?"},
+			"text": "A veces, los humanos me agobian y necesito la compañía de los árboles y el agua."},
+				{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
+			"text": "Este Bosque es anterior a La Era de los Cristales, ¿sabías?."},
 		{"speaker": "Abuela Catta", "portrait": ABUELA_PORTRAIT,
 			"text": "En el Manantial Púrpura se esconden las respuestas."},
 	])
@@ -300,6 +302,10 @@ func _play_post_battle_scene() -> void:
 		strangers[i].set_sprite_texture(STRANGER_SHOCKED_TEX)
 		strangers[i].portrait = STRANGER_SHOCKED_PORTRAIT
 		strangers[i].dialogue_lines = PackedStringArray([STRANGER_POST_ATTACK_LINES[i]])
+		# ya estan vencidos: no tiene sentido que sigan bloqueando el paso
+		# alrededor del manantial (el agua si sigue bloqueando, esa es de
+		# verdad). Se los puede seguir encarando para hablarles igual.
+		strangers[i].set_solid(false)
 		strangers[i].shake(0.5, 2.5)  # en paralelo
 	await get_tree().create_timer(0.5).timeout
 
