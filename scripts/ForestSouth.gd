@@ -169,8 +169,8 @@ func _screen_shake(cam: Camera2D, duration: float, strength: float) -> void:
 	cam.offset = Vector2.ZERO
 
 
-## Funde a negro y deja un cartel de titulo de capitulo fijo en pantalla.
-## No hay forma de sacarlo -- es el final del contenido por ahora.
+## Funde a negro y deja un cartel de titulo de capitulo. El jugador aprieta
+## una tecla para sacarlo y seguir a la escena de la playa.
 func _show_chapter_screen(text: String) -> void:
 	await Transition.fade_out(0.6)
 
@@ -188,3 +188,17 @@ func _show_chapter_screen(text: String) -> void:
 	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_color", Color(1, 0.844, 0.369, 1))
 	layer.add_child(label)
+
+	await _wait_for_any_key()
+	layer.queue_free()
+
+	get_tree().change_scene_to_file("res://scenes/Beach.tscn")
+
+
+## Espera a que el jugador apriete una tecla (ui_accept), sondeando una vez
+## por frame -- no hay ningun otro input activo en esta pantalla fija.
+func _wait_for_any_key() -> void:
+	while true:
+		await get_tree().process_frame
+		if Input.is_action_just_pressed("ui_accept"):
+			return

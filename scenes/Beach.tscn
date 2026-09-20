@@ -1,0 +1,111 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/Beach.gd" id="1_script"]
+[ext_resource type="TileSet" path="res://assets/tileset_beach/beach_tileset.tres" id="2_tileset"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/NPC.tscn" id="4_npc"]
+[ext_resource type="Texture2D" path="res://assets/tileset_beach/ship_crashed.png" id="5_ship_tex"]
+[ext_resource type="Script" path="res://scripts/InteractableProp.gd" id="6_interactable"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/sheep.png" id="7_sheep"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/cow.png" id="8_cow"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/chicken.png" id="9_chicken"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/pig.png" id="10_pig"]
+[ext_resource type="Texture2D" path="res://assets/characters_custom/crab.png" id="11_crab"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ship"]
+size = Vector2(40, 24)
+
+[node name="Beach" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="Decoration" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")
+
+[node name="Ship" type="StaticBody2D" parent="."]
+position = Vector2(424, 232)
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("6_interactable")
+interact_size = Vector2(48, 30)
+
+[node name="Sprite2D" type="Sprite2D" parent="Ship"]
+position = Vector2(0, 3)
+texture = ExtResource("5_ship_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ship"]
+position = Vector2(0, 2)
+shape = SubResource("RectangleShape2D_ship")
+
+[node name="Animals" type="Node2D" parent="."]
+
+[node name="Sheep1" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(280, 280)
+custom_texture = ExtResource("7_sheep")
+npc_name = "Oveja"
+dialogue_lines = PackedStringArray("Meeh meeeh...")
+
+[node name="Cow1" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(152, 392)
+custom_texture = ExtResource("8_cow")
+npc_name = "Vaca"
+dialogue_lines = PackedStringArray("Muuu muuu...")
+
+[node name="Chicken1" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(680, 136)
+custom_texture = ExtResource("9_chicken")
+npc_name = "Gallina"
+dialogue_lines = PackedStringArray("¡Coc, coc, cocoró!")
+
+[node name="Pig1" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(328, 392)
+custom_texture = ExtResource("10_pig")
+npc_name = "Cerdo"
+dialogue_lines = PackedStringArray("Oinc, oink.")
+
+[node name="Crab1" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(792, 472)
+custom_texture = ExtResource("11_crab")
+npc_name = "Cangrejo"
+dialogue_lines = PackedStringArray("Clic, clic, clic...")
+
+[node name="Sheep2" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(216, 168)
+custom_texture = ExtResource("7_sheep")
+npc_name = "Oveja"
+dialogue_lines = PackedStringArray("Meeh meeeh...")
+
+[node name="Cow2" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(72, 312)
+custom_texture = ExtResource("8_cow")
+npc_name = "Vaca"
+dialogue_lines = PackedStringArray("Muuu muuu...")
+
+[node name="Chicken2" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(296, 184)
+custom_texture = ExtResource("9_chicken")
+npc_name = "Gallina"
+dialogue_lines = PackedStringArray("¡Coc, coc, cocoró!")
+
+[node name="Pig2" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(328, 56)
+custom_texture = ExtResource("10_pig")
+npc_name = "Cerdo"
+dialogue_lines = PackedStringArray("Oinc, oink.")
+
+[node name="Crab2" parent="Animals" instance=ExtResource("4_npc")]
+position = Vector2(600, 424)
+custom_texture = ExtResource("11_crab")
+npc_name = "Cangrejo"
+dialogue_lines = PackedStringArray("Clic, clic, clic...")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(408, 344)
+
+[node name="Camera2D" parent="Player" index="2"]
+limit_left = 0
+limit_top = 0
+limit_right = 880
+limit_bottom = 640

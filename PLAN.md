@@ -861,3 +861,107 @@ de ancho base); se ajustó a `14`, confirmado por captura que entra
 completo y centrado.
 
 Probado con Godot real, con captura de pantalla real del cartel final.
+
+## Etapa 10: cartel de capítulo dismisseable, y la playa (2026-09-18)
+
+### 1. El cartel "Capítulo 1: La búsqueda" ahora se puede sacar
+
+Antes quedaba fijo para siempre (era el final del contenido). Ahora
+`ForestSouth._show_chapter_screen()` espera un `ui_accept` (Enter/Espacio,
+sondeado un frame a la vez con `_wait_for_any_key()`) y recién ahí cambia
+de escena a `Beach.tscn`.
+
+### 2. Pantalla oscura + narrador antes de revelar la playa
+
+`Beach.gd` arranca con el jugador bloqueado y el mundo ya construido pero
+tapado por el rect negro persistente de `Transition` (nunca se hizo
+`fade_in` desde que `ForestSouth` lo apagó a negro). Ahí se dispara
+`Dialogue.start_conversation` con una línea sin nombre de hablante (mismo
+estilo narrador que ya usábamos para el manantial): *"El viaje fue
+desquiciado. La nave está destruida pero Ryan, aunque muy lastimado, está
+vivo."* Al cerrarse, recién ahí `await Transition.fade_in()` revela la
+playa y se desbloquea al jugador.
+
+**Bug de layering encontrado armando esto**: el cartel de diálogo
+(`DialogueBox`, `CanvasLayer.layer = 10`) quedaba *por debajo* del rect
+negro de `Transition` (`layer = 20`) -- mostrar un diálogo mientras la
+pantalla está tapada de negro lo dejaba invisible (tapado por el rect).
+Nunca se notó antes porque en el resto del juego ningún diálogo se abre
+mientras hay un fade activo (la pantalla del capítulo esquivó este mismo
+problema armando su propio `CanvasLayer` ad-hoc en `layer = 21`). Se
+corrigió subiendo `DialogueBox.layer` a `25` (por encima de `Transition` y
+del cartel de capítulo) -- no cambia nada de lo que ya andaba, porque
+nunca coexistían.
+
+### 3. La playa (`Beach.tscn`/`Beach.gd`): el mapa más grande hasta ahora
+
+55x40 tiles (2200 celdas, contra las 1200 del bosque) con tileset propio
+nuevo (`assets/tileset_beach/`), armado con la misma técnica de
+recoloreado que el bosque (HSV fijo por pixel no transparente, ver
+`COMO_DARLE_MI_ESTILO_A_LOS_SRPITES.md`), esta vez hacia una gama
+cálida/rojiza en vez de violeta: arena tostada, agua **roja**, árboles oscuros
+casi negros (para que se sientan "de otro lugar", no el mismo bosque),
+rocas grises con un tinte cálido, y una fila de costa con espuma dibujada
+a mano (los recortes de laguna del bosque son para una costa vertical, no
+alcanzaban para una costa horizontal como esta).
+
+- **Bordes**: roca al norte, bosque oscuro al oeste, roca al este, y el
+  mar ocupando toda la franja sur de punta a punta (rompe adrede los
+  bordes de los costados -- la playa se abre al mar, no queda un cerco
+  perfecto).
+- **"Mucha piedra"**: 10 grupos irregulares de roca (6-7 celdas cada uno,
+  mismo truco de formas irregulares que las arboledas del bosque) más
+  piedras sueltas de adorno, repartidos por todo el interior.
+- **7 arboledas** de árboles oscuros, arbustos muertos, parches de arena
+  con sombra y de conchitas (dibujadas a mano, no recoloreadas -- igual
+  que las flores del bosque, recolorear el blanco no daba un buen
+  resultado).
+- **Todas las posiciones (rocas, árboles, animales) son fijas, no
+  aleatorias en runtime** -- se generaron una vez con un script Python
+  aparte (scatter con semilla fija + chequeo de superposición) y se
+  volcaron como listas de `Vector2i` literales en `Beach.gd`, para que el
+  mapa sea 100% determinístico como el resto del juego (mismo estilo que
+  las listas fijas de `Forest.gd`) sin tener que ubicar a mano 2200
+  celdas.
+- **La nave estrellada**: sprite nuevo (`ship_crashed.png`), la misma nave
+  del bosque pero con la cúpula rota (agujero irregular con el interior
+  oscuro expuesto), grietas en el casco, inclinada (rotada con muestreo
+  "nearest" para no perder la nitidez del pixel art), sentada en un
+  cráter de arena quemada (`SCORCHED_SAND`, tile nuevo) con humo saliendo
+  y brasas encendidas alrededor. Es un `InteractableProp` como la nave
+  vieja: al hablarle, un texto de narrador describe que quedó destruida
+  del todo.
+- **Animales despedigados**: 10 NPCs (2 de cada: oveja, vaca, gallina,
+  cerdo, cangrejo), reusando `NPC.gd` genérico sin ningún código nuevo
+  (`custom_texture` + `npc_name` + `dialogue_lines`) -- al hablarles dicen
+  su sonido ("Meeh meeeh...", "Muuu muuu...", etc.), como pediste con el
+  ejemplo de la oveja. Dibujados a mano con colores de "otro planeta" a
+  propósito (oveja violeta, vaca blanca con parches turquesa, gallina
+  naranja, chancho verde, cangrejo celeste) en vez de los colores reales.
+
+### Herramientas usadas para el arte (nuevo en este pase)
+
+No había `Pillow` disponible en el Python del sistema (falta `numpy`/PIL);
+se armó un venv chico en el scratchpad de la sesión
+(`python3 -m venv` + `pip install pillow`) para poder manipular pixels
+uno por uno (recolor por HSV, elipses/rectángulos rellenos para las rocas
+y los animales, rotación con `Image.NEAREST` para la nave inclinada). Si
+hace falta retocar este arte más adelante, esa es la herramienta a usar
+de nuevo (no quedó instalada de forma permanente, era solo del
+scratchpad).
+
+### Probado con Godot real
+
+- Import headless sin errores (`godot --headless --import`) con los 7
+  assets nuevos.
+- Self-test (`SceneTree` temporal, revertido) instanciando `Beach.tscn`:
+  las esquinas del mapa son obstáculo de borde, la franja sur es agua
+  roja de verdad, el cráter de la nave es arena quemada caminable sin
+  colisión de `Decoration`, los 10 animales están con las 5 especies
+  correctas, el jugador arranca bloqueado, la línea de narrador se
+  dispara sola, al cerrarse (simulando el Enter) el fundido revela la
+  playa y desbloquea al jugador, y tanto la nave como uno de los animales
+  responden al interactuar.
+- 3 capturas de pantalla reales (ejecutando el proyecto de verdad, no el
+  self-test headless): el cráter de la nave con humo y brasas, la costa
+  con el agua roja, y Ryan de cerca entre rocas/árboles/un chancho.
